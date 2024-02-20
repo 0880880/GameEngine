@@ -36,30 +36,32 @@ public class Engine {
     public HashMap<String, Material> loadedMaterials = new HashMap<>();
 
     public TextureAsset loadTexture(String name, FileHandle path) {
-        loadedTextures.put(name, new TextureAsset(path.path(), path.name(), new com.badlogic.gdx.graphics.Texture(path)));
+        if (!loadedTextures.containsKey(name)) loadedTextures.put(name, new TextureAsset(path.path(), path.name(), new com.badlogic.gdx.graphics.Texture(path)));
         return loadedTextures.get(name);
     }
 
     public Shader loadShader(String name, FileHandle path) {
-        loadedShaders.put(name, new Shader(path, path.readString()));
+        if (!loadedShaders.containsKey(name)) loadedShaders.put(name, new Shader(path, path.readString()));
         return loadedShaders.get(name);
     }
 
     public Shader loadShader(String name, String path) {
-        loadedShaders.put(name, new Shader(Gdx.files.absolute(path), Gdx.files.absolute(path).readString()));
+        if (!loadedShaders.containsKey(name)) loadedShaders.put(name, new Shader(Gdx.files.absolute(path), Gdx.files.absolute(path).readString()));
         return loadedShaders.get(name);
     }
 
     public Material loadMaterial(String name, FileHandle path) {
-        loadedMaterials.put(name, new Material(path, path.readString()));
+        if (!loadedMaterials.containsKey(name)) loadedMaterials.put(name, new Material(path, path.readString()));
         return loadedMaterials.get(name);
     }
 
     public AudioClip loadAudio(String name, FileHandle path) {
-        AudioClip clip = new AudioClip();
-        clip.soundFile = path.path();
-        clip.init();
-        loadedAudioClips.put(name, clip);
+        if (!loadedAudioClips.containsKey(name)) {
+            AudioClip clip = new AudioClip();
+            clip.soundFile = path.path();
+            clip.init();
+            loadedAudioClips.put(name, clip);
+        }
         return loadedAudioClips.get(name);
     }
 

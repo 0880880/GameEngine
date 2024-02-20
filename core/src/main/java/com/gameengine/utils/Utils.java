@@ -23,7 +23,7 @@ import com.gameengine.api.math.MathUtils;
 import de.pottgames.tuningfork.Audio;
 import de.pottgames.tuningfork.OpenDeviceException;
 import de.pottgames.tuningfork.UnsupportedAudioDeviceException;
-import imgui.ImGui;
+import imgui.internal.ImGui;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.lwjgl.PointerBuffer;
@@ -36,15 +36,14 @@ import java.awt.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.HashMap;
+import java.util.List;
 
 import static com.gameengine.Statics.*;
 import static org.lwjgl.util.nfd.NativeFileDialog.*;
@@ -365,7 +364,8 @@ public class Utils {
 	}
 
     private static void fixTextureAssets(Object object) {
-        // TODO Replace recusrion with a while loop
+        // TODO Replace recursion with a while loop
+        // TODO Doesn't work with ArrayLists
         if (object == null) return;
         for (Field field : object.getClass().getFields()) {
             if (
@@ -392,6 +392,37 @@ public class Utils {
                         throw new RuntimeException(e);
                     }
                 }
+            }
+            Class<?> typeC = field.getType();
+            Type type = field.getGenericType();
+            try {
+                if (List.class.isAssignableFrom(typeC)) {
+                    System.out.println(List.class.isAssignableFrom(typeC) + " = LIST " + field.getName() + " " + object.getClass().getSimpleName());
+                    List<Object> list = (List<Object>) field.get(object);
+                    ParameterizedType parameterizedType = (ParameterizedType) type;
+                    Type componentType = parameterizedType.getActualTypeArguments()[0];
+                    Class<?> componentTypeC = (Class<?>) componentType;
+                    System.out.println("LIST " + list.size() + " {");
+                    for (int j = 0; j < list.size(); j++) {
+                        System.out.println("    " + j);
+                        Object o = list.get(j);
+                        System.out.println(componentTypeC.getSimpleName());
+                        if (componentTypeC == com.gameengine.api.graphics.Texture.class) {
+                            com.gameengine.api.graphics.Texture tex = (com.gameengine.api.graphics.Texture) o;
+                            if (tex != null) {
+                                FileHandle file = Gdx.files.absolute(tex.textureAsset.getPath());
+                                TextureAsset newTex = engine.loadedTextures.get(file.nameWithoutExtension());
+                                if (newTex == null) newTex = engine.loadTexture(file.nameWithoutExtension(), file);
+                                tex.textureAsset = newTex;
+                                o = tex;
+                            }
+                        }
+                        list.set(j, o);
+                    }
+                    System.out.println("}");
+                }
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
             }
         }
     }

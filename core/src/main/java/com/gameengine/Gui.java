@@ -6,6 +6,7 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Cursor;
 import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.math.*;
 import com.gameengine.api.*;
@@ -38,10 +39,7 @@ import org.lwjgl.util.nfd.NativeFileDialog;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.reflect.*;
 import java.util.*;
 
 import static com.gameengine.Statics.*;
@@ -1106,7 +1104,7 @@ public class Gui {
 
     Stack<Boolean> treeStack = new Stack<>();
 
-    private void editField(String name, Object object, String label) {
+    private void editField(String name, ParticleEffect object, String label) {
         ImGui.text(label + ":");
         ImGui.sameLine();
         ImGui.indent(160);
@@ -1142,7 +1140,8 @@ public class Gui {
             } else {
                 f.set(object, edit(f.getType(), name, f.get(object)));
             }
-        } catch (NoSuchFieldException | IllegalAccessException | InvocationTargetException | InstantiationException |
+        } catch (NoSuchFieldException | IllegalAccessException | InvocationTargetException |
+                 InstantiationException |
                  NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
@@ -1236,6 +1235,7 @@ public class Gui {
                                     ParticleEffect particleEffect = (ParticleEffect) field.get(component);
                                     ImGui.text("");
                                     ImGui.unindent(90);
+                                    editField("name", particleEffect, "Name");
                                     if (ImGui.collapsingHeader("Sprites")) {
                                         editField("sprites", particleEffect, "Sprites");
                                         editField("optionsSpriteMode", particleEffect, "Sprite Mode");

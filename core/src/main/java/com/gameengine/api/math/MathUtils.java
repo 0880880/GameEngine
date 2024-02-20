@@ -76,23 +76,23 @@ public class MathUtils {
     }
 
     public static float sinDeg(float x) {
-        return radToDeg((float) Math.sin(x));
+        return degToRad((float) Math.sin(x));
     }
 
     public static float cosDeg(float x) {
-        return radToDeg((float) Math.cos(x));
+        return degToRad((float) Math.cos(x));
     }
 
     public static float tanDeg(float x) {
-        return radToDeg((float) Math.tan(x));
+        return degToRad((float) Math.tan(x));
     }
 
     public static float atanDeg(float x) {
-        return radToDeg((float) Math.atan(x));
+        return degToRad((float) Math.atan(x));
     }
 
     public static float atan2Deg(float y, float x) {
-        return radToDeg((float) Math.atan2(y, x));
+        return degToRad((float) Math.atan2(y, x));
     }
 
     // CLAMP
