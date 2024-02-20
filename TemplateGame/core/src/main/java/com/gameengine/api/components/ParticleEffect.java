@@ -1,5 +1,7 @@
 package com.gameengine.api.components;
 
+import com.badlogic.gdx.utils.Json;
+import com.badlogic.gdx.utils.JsonValue;
 import com.gameengine.api.ColorRange;
 import com.gameengine.api.Curve;
 import com.gameengine.api.graphics.Color;
@@ -8,6 +10,7 @@ import com.gameengine.api.math.Vector2;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class ParticleEffect {
 
@@ -80,8 +83,7 @@ public class ParticleEffect {
     public int lifeLowMax = 0;
     public int lifeHighMin = 1000;
     public int lifeHighMax = 500;
-    public boolean lifeRelative = false;
-    public Curve lifeScaling = new Curve(new Vector2(0,1), new Vector2(.66f,1), new Vector2(1,.3f));
+    public Curve life = new Curve(new Vector2(0,1), new Vector2(.66f,1), new Vector2(1,.3f));
 
     // Life Offset
     public boolean lifeOffsetActive = false;
@@ -190,7 +192,7 @@ public class ParticleEffect {
     public SpriteMode optionsSpriteMode = SpriteMode.SINGLE;
 
     // Sprites
-    public ArrayList<Texture> sprites = new ArrayList<>(Arrays.asList(new Texture[] {null}));
+    public ArrayList<Texture> sprites = new ArrayList<>(List.of(new Texture()));
 
 }
 

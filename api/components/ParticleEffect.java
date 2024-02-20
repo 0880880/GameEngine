@@ -6,6 +6,7 @@ import com.gameengine.api.graphics.Color;
 import com.gameengine.api.graphics.Texture;
 import com.gameengine.api.math.Vector2;
 
+import java.util.List;
 
 public class ParticleEffect {
 
@@ -59,8 +60,7 @@ public class ParticleEffect {
  public int lifeLowMax = 0;
  public int lifeHighMin = 1000;
  public int lifeHighMax = 500;
- public boolean lifeRelative = false;
- public Curve lifeScaling = new Curve(new Vector2(0,1), new Vector2(.66f,1), new Vector2(1,.3f));
+ public Curve life = new Curve(new Vector2(0,1), new Vector2(.66f,1), new Vector2(1,.3f));
 
  
  public boolean lifeOffsetActive = false;
