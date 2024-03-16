@@ -2,7 +2,7 @@
 
 A lightweight 2D game engine made with libGDX.
 
-![Preview](Preview.png)
+![Editor](Editor.png)
 
 ## **Features**
 
