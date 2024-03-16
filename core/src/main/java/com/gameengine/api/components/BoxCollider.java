@@ -1,10 +1,11 @@
 package com.gameengine.api.components;
 
-import com.badlogic.gdx.physics.box2d.*;
 import com.gameengine.api.Component;
+import com.gameengine.api.Debug;
 import com.gameengine.api.Renderer;
 import com.gameengine.api.graphics.Color;
 import com.gameengine.api.math.Vector2;
+import com.gameengine.api.physics.Physics;
 
 public class BoxCollider extends Component implements Collider {
 
@@ -17,14 +18,20 @@ public class BoxCollider extends Component implements Collider {
     public boolean isSensor = false;
     public PhysicsFilter filter = new PhysicsFilter();
 
-    private Fixture fixture;
+    private com.badlogic.gdx.physics.box2d.Fixture fixture;
 
-    public Fixture createFixture(Body body) {
+    public int ID;
 
-        PolygonShape shape = new PolygonShape();
+    public void start() {
+        ID = Physics.colliderCounter++;
+    }
+
+    public com.badlogic.gdx.physics.box2d.Fixture createFixture(com.badlogic.gdx.physics.box2d.Body body) {
+
+        com.badlogic.gdx.physics.box2d.PolygonShape shape = new com.badlogic.gdx.physics.box2d.PolygonShape();
         shape.setAsBox(size.x / 2f, size.y / 2f, new com.badlogic.gdx.math.Vector2(center.x, center.y), angle);
 
-        FixtureDef fixtureDef = new FixtureDef();
+        com.badlogic.gdx.physics.box2d.FixtureDef fixtureDef = new com.badlogic.gdx.physics.box2d.FixtureDef();
         fixtureDef.shape = shape;
         fixtureDef.density = density;
         fixtureDef.friction = friction;
@@ -35,6 +42,9 @@ public class BoxCollider extends Component implements Collider {
         fixtureDef.filter.groupIndex = filter.groupIndex;
 
         fixture = body.createFixture(fixtureDef);
+        fixture.setUserData(Physics.colliderCounter);
+
+        Physics.addCollider(this, fixture);
 
         shape.dispose();
 
@@ -42,13 +52,17 @@ public class BoxCollider extends Component implements Collider {
 
     }
 
-    public Fixture getFixture() {
+    public com.badlogic.gdx.physics.box2d.Fixture getFixture() {
         return fixture;
     }
 
     public void debugUpdate() {
         Vector2 position = gameObject.transform.position;
-        Renderer.drawDebugRect(position.x + center.x, position.y + center.y, size.x, size.y, gameObject.transform.rotation + angle, Color.GREEN, 10);
+        Debug.rectangle(position.x + center.x, position.y + center.y, size.x, size.y, gameObject.transform.rotation + angle, Color.GREEN, 1);
     }
 
+    @Override
+    public int hashCode() {
+        return Integer.hashCode(ID);
+    }
 }
