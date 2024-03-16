@@ -1,10 +1,7 @@
 package com.gameengine.api.components;
 
 import com.badlogic.gdx.graphics.g2d.Sprite;
-import com.gameengine.api.Component;
-import com.gameengine.api.Curve;
-import com.gameengine.api.Renderer;
-import com.gameengine.api.Time;
+import com.gameengine.api.*;
 import com.gameengine.api.graphics.Color;
 import com.gameengine.api.graphics.Texture;
 import com.gameengine.api.math.MathUtils;
@@ -50,113 +47,138 @@ public class ParticleEmitter extends Component {
         return scaling;
     }
 
-    private void setProperties() {
-        gdxEmitter.getDelay().setActive(particleEffect.delayActive);
-        gdxEmitter.getDelay().setLow(particleEffect.delayLowMin, particleEffect.delayLowMax);
+    private com.badlogic.gdx.graphics.g2d.ParticleEmitter setEmitter(com.badlogic.gdx.graphics.g2d.ParticleEmitter emitter) {
 
-        gdxEmitter.getDuration().setLow(particleEffect.durationLowMin, particleEffect.durationLowMax);
-
-        gdxEmitter.setMinParticleCount(particleEffect.countMin);
-        gdxEmitter.setMaxParticleCount(particleEffect.countMax);
-
-        gdxEmitter.getEmission().setActive(particleEffect.emissionActive);
-        gdxEmitter.getEmission().setLow(particleEffect.emissionLowMin, particleEffect.emissionLowMax);
-        gdxEmitter.getEmission().setHigh(particleEffect.emissionHighMin, particleEffect.emissionHighMax);
-
-        gdxEmitter.getLife().setLow(particleEffect.lifeLowMin, particleEffect.lifeLowMax);
-        gdxEmitter.getLife().setHigh(particleEffect.lifeHighMin, particleEffect.lifeHighMax);
-        gdxEmitter.getLife().setTimeline(getTimeline(particleEffect.life, gdxEmitter.getLife().getTimeline()));
-        gdxEmitter.getLife().setScaling(getScaling(particleEffect.life, gdxEmitter.getLife().getScaling()));
-
-        gdxEmitter.getLifeOffset().setActive(particleEffect.lifeOffsetActive);
-        gdxEmitter.getLifeOffset().setLow(particleEffect.lifeOffsetLowMin, particleEffect.lifeOffsetLowMax);
-        gdxEmitter.getLifeOffset().setHigh(particleEffect.lifeOffsetHighMin, particleEffect.lifeOffsetHighMax);
-        gdxEmitter.getLifeOffset().setTimeline(getTimeline(particleEffect.lifeOffset, gdxEmitter.getLifeOffset().getTimeline()));
-        gdxEmitter.getLifeOffset().setScaling(getScaling(particleEffect.lifeOffset, gdxEmitter.getLifeOffset().getScaling()));
-
-        gdxEmitter.getXOffsetValue().setActive(particleEffect.xOffsetActive);
-        gdxEmitter.getXOffsetValue().setLow(particleEffect.xOffsetLowMin, particleEffect.xOffsetLowMax);
-
-        gdxEmitter.getYOffsetValue().setActive(particleEffect.yOffsetActive);
-        gdxEmitter.getYOffsetValue().setLow(particleEffect.yOffsetLowMin, particleEffect.yOffsetLowMax);
-
-        gdxEmitter.getSpawnShape().setShape(ParticleEffect.getGdxSpawnShape(particleEffect.spawnShape));
-        if (particleEffect.spawnShape == ParticleEffect.SpawnShape.ELLIPSE) {
-            gdxEmitter.getSpawnShape().setEdges(particleEffect.spawnEdges);
-            gdxEmitter.getSpawnShape().setSide(ParticleEffect.getGdxSpawnEllipseSide(particleEffect.spawnEllipseSide));
+        emitter.setName(particleEffect.name);
+        if (particleEffect.delayActive) {
+            emitter.getDelay().setActive(particleEffect.delayActive);
+            emitter.getDelay().setLow(particleEffect.delayLowMin, particleEffect.delayLowMax);
         }
-
-        gdxEmitter.getSpawnWidth().setLow(particleEffect.spawnWidthLowMin, particleEffect.spawnWidthLowMax);
-        gdxEmitter.getSpawnWidth().setHigh(particleEffect.spawnWidthHighMin, particleEffect.spawnWidthHighMax);
-        gdxEmitter.getSpawnWidth().setTimeline(getTimeline(particleEffect.spawnWidth, gdxEmitter.getSpawnWidth().getTimeline()));
-        gdxEmitter.getSpawnWidth().setScaling(getScaling(particleEffect.spawnWidth, gdxEmitter.getSpawnWidth().getScaling()));
-
-        gdxEmitter.getSpawnHeight().setLow(particleEffect.spawnHeightLowMin, particleEffect.spawnHeightLowMax);
-        gdxEmitter.getSpawnHeight().setHigh(particleEffect.spawnHeightHighMin, particleEffect.spawnHeightHighMax);
-        gdxEmitter.getSpawnHeight().setTimeline(getTimeline(particleEffect.spawnHeight, gdxEmitter.getSpawnHeight().getTimeline()));
-        gdxEmitter.getSpawnHeight().setScaling(getScaling(particleEffect.spawnHeight, gdxEmitter.getSpawnHeight().getScaling()));
-
-        gdxEmitter.getXScale().setLow(particleEffect.xScaleLowMin, particleEffect.xScaleLowMax);
-        gdxEmitter.getXScale().setHigh(particleEffect.xScaleHighMin, particleEffect.xScaleHighMax);
-        gdxEmitter.getXScale().setTimeline(getTimeline(particleEffect.xScale, gdxEmitter.getXScale().getTimeline()));
-        gdxEmitter.getXScale().setScaling(getScaling(particleEffect.xScale, gdxEmitter.getXScale().getScaling()));
-
-        gdxEmitter.getYScale().setLow(particleEffect.yScaleLowMin, particleEffect.yScaleLowMax);
-        gdxEmitter.getYScale().setHigh(particleEffect.yScaleHighMin, particleEffect.yScaleHighMax);
-        gdxEmitter.getYScale().setTimeline(getTimeline(particleEffect.yScale, gdxEmitter.getYScale().getTimeline()));
-        gdxEmitter.getYScale().setScaling(getScaling(particleEffect.yScale, gdxEmitter.getYScale().getScaling()));
-
-        gdxEmitter.getVelocity().setLow(particleEffect.velocityLowMin, particleEffect.velocityLowMax);
-        gdxEmitter.getVelocity().setHigh(particleEffect.velocityHighMin, particleEffect.velocityHighMax);
-        gdxEmitter.getVelocity().setTimeline(getTimeline(particleEffect.velocity, gdxEmitter.getVelocity().getTimeline()));
-        gdxEmitter.getVelocity().setScaling(getScaling(particleEffect.velocity, gdxEmitter.getVelocity().getScaling()));
-
-        gdxEmitter.getAngle().setLow(particleEffect.angleLowMin, particleEffect.angleLowMax);
-        gdxEmitter.getAngle().setHigh(particleEffect.angleHighMin, particleEffect.angleHighMax);
-        gdxEmitter.getAngle().setTimeline(getTimeline(particleEffect.angle, gdxEmitter.getAngle().getTimeline()));
-        gdxEmitter.getAngle().setScaling(getScaling(particleEffect.angle, gdxEmitter.getAngle().getScaling()));
-
-        gdxEmitter.getRotation().setLow(particleEffect.rotationLowMin, particleEffect.rotationLowMax);
-        gdxEmitter.getRotation().setHigh(particleEffect.rotationHighMin, particleEffect.rotationHighMax);
-        gdxEmitter.getRotation().setTimeline(getTimeline(particleEffect.rotation, gdxEmitter.getRotation().getTimeline()));
-        gdxEmitter.getRotation().setScaling(getScaling(particleEffect.rotation, gdxEmitter.getRotation().getScaling()));
-
-        gdxEmitter.getWind().setLow(particleEffect.windLowMin, particleEffect.windLowMax);
-        gdxEmitter.getWind().setHigh(particleEffect.windHighMin, particleEffect.windHighMax);
-        gdxEmitter.getWind().setTimeline(getTimeline(particleEffect.wind, gdxEmitter.getWind().getTimeline()));
-        gdxEmitter.getWind().setScaling(getScaling(particleEffect.wind, gdxEmitter.getWind().getScaling()));
-
-        gdxEmitter.getGravity().setLow(particleEffect.gravityLowMin, particleEffect.gravityLowMax);
-        gdxEmitter.getGravity().setHigh(particleEffect.gravityHighMin, particleEffect.gravityHighMax);
-        gdxEmitter.getGravity().setTimeline(getTimeline(particleEffect.gravity, gdxEmitter.getGravity().getTimeline()));
-        gdxEmitter.getGravity().setScaling(getScaling(particleEffect.gravity, gdxEmitter.getGravity().getScaling()));
-
-        float[] scaling = gdxEmitter.getTint().getColors();
-        float[] timeline = gdxEmitter.getTint().getTimeline();
-        if (particleEffect.tintColors.size() != timeline.length) {
-            timeline = new float[particleEffect.tintColors.size()];
-            scaling = new float[particleEffect.tintColors.size() * 3];
+        emitter.getDuration().setActive(true);
+        emitter.getDuration().setLow(particleEffect.durationLowMin, particleEffect.durationLowMax);
+        emitter.setMinParticleCount(particleEffect.countMin);
+        emitter.setMaxParticleCount(particleEffect.countMax);
+        if (particleEffect.emissionActive) {
+            emitter.getEmission().setActive(true);
+            emitter.getEmission().setLow(particleEffect.emissionLowMin, particleEffect.emissionLowMax);
+            emitter.getEmission().setHigh(particleEffect.emissionHighMin, particleEffect.emissionHighMax);
+            emitter.getEmission().setTimeline(getTimeline(particleEffect.emission));
+            emitter.getEmission().setScaling(getScaling(particleEffect.emission));
         }
-        for (int i = 0; i < particleEffect.tintColors.size(); i++) {
-            Color c = particleEffect.tintColors.getColor(i);
-            scaling[i * 3] = c.r;
-            scaling[i * 3 + 1] = c.g;
-            scaling[i * 3 + 2] = c.b;
-            timeline[i] = particleEffect.tintColors.getTime(i);
+        emitter.getLife().setActive(true);
+        emitter.getLife().setLow(particleEffect.lifeLowMin, particleEffect.lifeLowMax);
+        emitter.getLife().setHigh(particleEffect.lifeHighMin, particleEffect.lifeHighMax);
+        emitter.getLife().setTimeline(getTimeline(particleEffect.life));
+        emitter.getLife().setScaling(getScaling(particleEffect.life));
+        if (particleEffect.lifeOffsetActive) {
+            emitter.getLifeOffset().setActive(particleEffect.lifeOffsetActive);
+            emitter.getLifeOffset().setLow(particleEffect.lifeOffsetLowMin, particleEffect.lifeOffsetLowMax);
+            emitter.getLifeOffset().setHigh(particleEffect.lifeOffsetHighMin, particleEffect.lifeOffsetHighMax);
+            emitter.getLifeOffset().setTimeline(getTimeline(particleEffect.lifeOffset));
+            emitter.getLifeOffset().setScaling(getScaling(particleEffect.lifeOffset));
         }
-        gdxEmitter.getTint().setColors(scaling);
-        gdxEmitter.getTint().setTimeline(timeline);
+        if (particleEffect.xOffsetActive) {
+            emitter.getXOffsetValue().setActive(particleEffect.xOffsetActive);
+            emitter.getXOffsetValue().setLow(particleEffect.xOffsetLowMin, particleEffect.xOffsetLowMax);
+        }
+        if (particleEffect.yOffsetActive) {
+            emitter.getYOffsetValue().setActive(particleEffect.yOffsetActive);
+            emitter.getYOffsetValue().setLow(particleEffect.yOffsetLowMin, particleEffect.yOffsetLowMax);
+        }
+        emitter.getSpawnShape().setShape(ParticleEffect.getGdxSpawnShape(particleEffect.spawnShape));
+        if (particleEffect.spawnShape != ParticleEffect.SpawnShape.POINT) {
 
-        gdxEmitter.getTransparency().setTimeline(getTimeline(particleEffect.transparency, gdxEmitter.getTransparency().getTimeline()));
-        gdxEmitter.getTransparency().setScaling(getScaling(particleEffect.transparency, gdxEmitter.getTransparency().getScaling()));
+            emitter.getSpawnWidth().setLow(particleEffect.spawnWidthLowMin, particleEffect.spawnWidthLowMax);
+            emitter.getSpawnWidth().setHigh(particleEffect.spawnWidthHighMin, particleEffect.spawnWidthHighMax);
+            emitter.getSpawnWidth().setTimeline(getTimeline(particleEffect.spawnWidth));
+            emitter.getSpawnWidth().setScaling(getScaling(particleEffect.spawnWidth));
 
-        gdxEmitter.setAttached(particleEffect.optionsAttached);
-        gdxEmitter.setContinuous(particleEffect.optionsContinuous);
-        gdxEmitter.setAligned(particleEffect.optionsAligned);
-        gdxEmitter.setAdditive(particleEffect.optionsAdditive);
-        gdxEmitter.setBehind(particleEffect.optionsBehind);
-        gdxEmitter.setPremultipliedAlpha(particleEffect.optionsPremultipliedAlpha);
-        gdxEmitter.setSpriteMode(ParticleEffect.getGdxSpriteMode(particleEffect.optionsSpriteMode));
+            emitter.getSpawnHeight().setLow(particleEffect.spawnHeightLowMin, particleEffect.spawnHeightLowMax);
+            emitter.getSpawnHeight().setHigh(particleEffect.spawnHeightHighMin, particleEffect.spawnHeightHighMax);
+            emitter.getSpawnHeight().setTimeline(getTimeline(particleEffect.spawnHeight));
+            emitter.getSpawnHeight().setScaling(getScaling(particleEffect.spawnHeight));
+
+            if (particleEffect.spawnShape == ParticleEffect.SpawnShape.ELLIPSE) {
+                emitter.getSpawnShape().setEdges(particleEffect.spawnEdges);
+                emitter.getSpawnShape().setSide(ParticleEffect.getGdxSpawnEllipseSide(particleEffect.spawnEllipseSide));
+            }
+
+        }
+        emitter.getXScale().setLow(particleEffect.xScaleLowMin, particleEffect.xScaleLowMax);
+        emitter.getXScale().setHigh(particleEffect.xScaleHighMin, particleEffect.xScaleHighMax);
+        emitter.getXScale().setTimeline(getTimeline(particleEffect.xScale));
+        emitter.getXScale().setScaling(getScaling(particleEffect.xScale));
+        emitter.getYScale().setLow(particleEffect.yScaleLowMin, particleEffect.yScaleLowMax);
+        emitter.getYScale().setHigh(particleEffect.yScaleHighMin, particleEffect.yScaleHighMax);
+        emitter.getYScale().setTimeline(getTimeline(particleEffect.yScale));
+        emitter.getYScale().setScaling(getScaling(particleEffect.yScale));
+        if (particleEffect.velocityActive) {
+            emitter.getVelocity().setActive(particleEffect.velocityActive);
+            emitter.getVelocity().setLow(particleEffect.velocityLowMin, particleEffect.velocityLowMax);
+            emitter.getVelocity().setHigh(particleEffect.velocityHighMin, particleEffect.velocityHighMax);
+            emitter.getVelocity().setTimeline(getTimeline(particleEffect.velocity));
+            emitter.getVelocity().setScaling(getScaling(particleEffect.velocity));
+        }
+        if (particleEffect.angleActive) {
+            emitter.getAngle().setActive(particleEffect.angleActive);
+            emitter.getAngle().setLow(particleEffect.angleLowMin, particleEffect.angleLowMax);
+            emitter.getAngle().setHigh(particleEffect.angleHighMin, particleEffect.angleHighMax);
+            emitter.getAngle().setTimeline(getTimeline(particleEffect.angle));
+            emitter.getAngle().setScaling(getScaling(particleEffect.angle));
+        }
+        if (particleEffect.rotationActive) {
+            emitter.getRotation().setActive(particleEffect.rotationActive);
+            emitter.getRotation().setLow(particleEffect.rotationLowMin, particleEffect.rotationLowMax);
+            emitter.getRotation().setHigh(particleEffect.rotationHighMin, particleEffect.rotationHighMax);
+            emitter.getRotation().setTimeline(getTimeline(particleEffect.rotation));
+            emitter.getRotation().setScaling(getScaling(particleEffect.rotation));
+        }
+        if (particleEffect.windActive) {
+            emitter.getWind().setActive(particleEffect.windActive);
+            emitter.getWind().setLow(particleEffect.windLowMin, particleEffect.windLowMax);
+            emitter.getWind().setHigh(particleEffect.windHighMin, particleEffect.windHighMax);
+            emitter.getWind().setTimeline(getTimeline(particleEffect.wind));
+            emitter.getWind().setScaling(getScaling(particleEffect.wind));
+        }
+        if (particleEffect.gravityActive) {
+            emitter.getGravity().setActive(particleEffect.gravityActive);
+            emitter.getGravity().setLow(particleEffect.gravityLowMin, particleEffect.gravityLowMax);
+            emitter.getGravity().setHigh(particleEffect.gravityHighMin, particleEffect.gravityHighMax);
+            emitter.getGravity().setTimeline(getTimeline(particleEffect.gravity));
+            emitter.getGravity().setScaling(getScaling(particleEffect.gravity));
+        }
+        {
+            emitter.getTint().setActive(true);
+            float[] scaling = emitter.getTint().getColors();
+            float[] timeline = emitter.getTint().getTimeline();
+            if (particleEffect.tintColors.size() != timeline.length) {
+                timeline = new float[particleEffect.tintColors.size()];
+                scaling = new float[particleEffect.tintColors.size() * 3];
+            }
+            for (int i = 0; i < particleEffect.tintColors.size(); i++) {
+                Color c = particleEffect.tintColors.getColor(i);
+                scaling[i * 3] = c.r;
+                scaling[i * 3 + 1] = c.g;
+                scaling[i * 3 + 2] = c.b;
+                timeline[i] = particleEffect.tintColors.getTime(i);
+            }
+            emitter.getTint().setColors(scaling);
+            emitter.getTint().setTimeline(timeline);
+        }
+        emitter.getTransparency().setActive(true);
+        emitter.getTransparency().setLow(0, 0);
+        emitter.getTransparency().setHigh(1, 1);
+        emitter.getTransparency().setTimeline(getTimeline(particleEffect.transparency));
+        emitter.getTransparency().setScaling(getScaling(particleEffect.transparency));
+        emitter.setAttached(particleEffect.optionsAttached);
+        emitter.setContinuous(particleEffect.optionsContinuous);
+        emitter.setAligned(particleEffect.optionsAligned);
+        emitter.setAdditive(particleEffect.optionsAdditive);
+        emitter.setBehind(particleEffect.optionsBehind);
+        emitter.setPremultipliedAlpha(particleEffect.optionsPremultipliedAlpha);
+        emitter.setSpriteMode(ParticleEffect.getGdxSpriteMode(particleEffect.optionsSpriteMode));
+
+        return emitter;
 
     }
 
@@ -164,11 +186,11 @@ public class ParticleEmitter extends Component {
 
     public ParticleEffect particleEffect = new ParticleEffect();
     public Vector2 position = new Vector2();
+    public float rotation = 0;
     public boolean startOnAwake;
 
     public void start() {
-        gdxEmitter = new com.badlogic.gdx.graphics.g2d.ParticleEmitter();
-        setProperties();
+        gdxEmitter = setEmitter(new com.badlogic.gdx.graphics.g2d.ParticleEmitter());
         for (int i = 0; i < particleEffect.sprites.size(); i++) {
             Sprite s;
             Texture tex = particleEffect.sprites.get(i);
@@ -184,23 +206,23 @@ public class ParticleEmitter extends Component {
     public void update() {
 
         gdxEmitter.setPosition(
-            gameObject.transform.position.x + (MathUtils.cosDeg(gameObject.transform.rotation) * position.x -
-                MathUtils.sinDeg(gameObject.transform.rotation) * position.y),
-            gameObject.transform.position.y + (MathUtils.sinDeg(gameObject.transform.rotation) * position.x +
-                MathUtils.cosDeg(gameObject.transform.rotation) * position.y)
+            gameObject.transform.position.x + (MathUtils.cosDeg(gameObject.transform.rotation - rotation) * position.x -
+                MathUtils.sinDeg(gameObject.transform.rotation - rotation) * position.y),
+            gameObject.transform.position.y + (MathUtils.sinDeg(gameObject.transform.rotation - rotation) * position.x +
+                MathUtils.cosDeg(gameObject.transform.rotation - rotation) * position.y)
         );
         gdxEmitter.update(Time.getDeltaTime());
-        Renderer.drawGdxEmitter(gdxEmitter);
+        Renderer.drawGdxEmitter(gdxEmitter, rotation);
 
     }
 
     public void startEmitter() {
-        setProperties();
+        setEmitter(gdxEmitter);
         gdxEmitter.start();
     }
 
     public void resetEmitter() {
-        setProperties();
+        setEmitter(gdxEmitter);
         gdxEmitter.reset();
     }
 
