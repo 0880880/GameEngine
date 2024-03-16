@@ -21,11 +21,13 @@ def remove_lines_with_substrings(input_string, substrings_to_remove, exclude_sub
 important_keywords = ["gdx", "lwjgl", "lombok", "earlygrey", "transient"]
 keywords = [
 "Statics", "gdx", "lwjgl", "lombok", "earlygrey", "Sprite", "ShapeDrawer", "random", "Viewport", "@Getter",
-"@AllArgsConstructor", "Array", "CameraHolder", "FileHandle", ".Utils", "tuningfork", "SoundListener", "SoundBuffer",
+"@AllArgsConstructor", "Array", "FileHandle", ".Utils", "tuningfork", "SoundListener", "SoundBuffer",
 "BufferedSoundSource", "FileHandle", "AudioManager", "World", "Body", "Fixture", "Joint", "ShaderProgram", "JsonIgnore",
 "ShaderProgram", "Json", "StreamedSoundSource"
 ]
-exclude_keywords = ["RigidBody", "AudioManager", "DistanceJoint", "RevoluteJoint", "PrismaticJoint", "RopeJoint", "WheelJoint", "WeldJoint", "SpriteMode"]
+exclude_keywords = [
+"RigidBody", "AudioManager", "DistanceJoint", "RevoluteJoint", "PrismaticJoint", "RopeJoint", "WheelJoint", "WeldJoint", "SpriteMode", "SpriteRenderer"
+]
 exclude_files = ["MaterialJsonDeserializer.java"]
 
 input_file = "../core/src/main/java/com/gameengine/api"
@@ -221,8 +223,8 @@ def api_preprocess1(root_folder):
 
 api_preprocess1(input_file)
 
-template_output = "build/lib/TemplateGame"
-api_final_output = "build/lib//api"
+template_output = "build\\lib\\TemplateGame"
+api_final_output = "build\\lib\\api"
 
 if Path(template_output).exists():
     shutil.rmtree(template_output)
