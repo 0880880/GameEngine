@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.gameengine.Statics;
+import com.gameengine.api.Debug;
 import com.gameengine.api.Renderer;
 
 import static com.gameengine.Statics.*;
@@ -40,7 +41,7 @@ public class RenderUtils {
         editorViewport.unproject(tmp0.set(0,0));
         editorViewport.unproject(tmp1.set(1,1));
         debugScale = Math.min(tmp1.x, tmp1.y) - Math.min(tmp0.x, tmp0.y) + .01f;
-        Renderer.debugScale = debugScale;
+        Debug.debugScale = debugScale;
 
         float gridSize = 1;
 
