@@ -1,5 +1,6 @@
 package com.gameengine;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -19,6 +20,8 @@ public class MainMenu implements Screen {
     public void render(float delta) {
 
         ScreenUtils.clear(Color.BLACK);
+
+        Gdx.graphics.setTitle("Game Engine");
 
         gui.renderMainMenu();
 
