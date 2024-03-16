@@ -2,14 +2,13 @@ package com.gameengine.utils;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
-import com.badlogic.gdx.Preferences;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Pixmap.Format;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.CpuSpriteBatch;
 import com.badlogic.gdx.graphics.g2d.Sprite;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.utils.Array;
@@ -23,7 +22,6 @@ import com.gameengine.api.math.MathUtils;
 import de.pottgames.tuningfork.Audio;
 import de.pottgames.tuningfork.OpenDeviceException;
 import de.pottgames.tuningfork.UnsupportedAudioDeviceException;
-import imgui.internal.ImGui;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.lwjgl.PointerBuffer;
@@ -144,7 +142,7 @@ public class Utils {
             if (!tempDir.child("annotations").exists())
                 tempDir.child("annotations").mkdirs();
 
-            String[] compileApiOrder = new String[] {"Engine.java", "Debug.java", "Renderer.java", "Input.java", "ShaderLanguage.java", "GameObject.java", "Time.java", "Component.java", "GameObjectCondition.java", "AudioManager.java", "Label.java", "Curve.java", "Button.java", "ColorRange.java"};
+            String[] compileApiOrder = new String[] {"Engine.java", "Debug.java", "Renderer.java", "Input.java", "ShaderLanguage.java", "GameObject.java", "Time.java", "Component.java", "GameObjectCondition.java", "AudioManager.java", "Label.java", "Curve.java", "Button.java", "ColorRange.java", "Graphics.java", "CameraHolder.java"};
             String[] foldersToCopy = new String[] {"components", "math", "graphics", "audio", "physics", "annotations"};
 
             for (String s : compileApiOrder) {
@@ -302,7 +300,7 @@ public class Utils {
         addComponents(currentProject.path.child("Assets"));
 
         currentProject.components.add(Transform.class);
-        currentProject.components.add(Renderable.class);
+        currentProject.components.add(SpriteRenderer.class);
         currentProject.components.add(Camera.class);
         currentProject.components.add(AudioListener.class);
         currentProject.components.add(AudioSource.class);
@@ -397,16 +395,12 @@ public class Utils {
             Type type = field.getGenericType();
             try {
                 if (List.class.isAssignableFrom(typeC)) {
-                    System.out.println(List.class.isAssignableFrom(typeC) + " = LIST " + field.getName() + " " + object.getClass().getSimpleName());
                     List<Object> list = (List<Object>) field.get(object);
                     ParameterizedType parameterizedType = (ParameterizedType) type;
                     Type componentType = parameterizedType.getActualTypeArguments()[0];
                     Class<?> componentTypeC = (Class<?>) componentType;
-                    System.out.println("LIST " + list.size() + " {");
                     for (int j = 0; j < list.size(); j++) {
-                        System.out.println("    " + j);
                         Object o = list.get(j);
-                        System.out.println(componentTypeC.getSimpleName());
                         if (componentTypeC == com.gameengine.api.graphics.Texture.class) {
                             com.gameengine.api.graphics.Texture tex = (com.gameengine.api.graphics.Texture) o;
                             if (tex != null) {
@@ -419,7 +413,6 @@ public class Utils {
                         }
                         list.set(j, o);
                     }
-                    System.out.println("}");
                 }
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
@@ -453,7 +446,7 @@ public class Utils {
         }
 
         SerializableProject sp = new SerializableProject();
-        sp.path = path;
+        sp.path = Gdx.files.absolute(path);
         sp.projectName = name;
         sp.rootGameObject = new SerializableGameObject(new GameObject());
 
@@ -476,7 +469,7 @@ public class Utils {
 	}
 
 	public static void initialize() {
-		batch = new SpriteBatch();
+		batch = new CpuSpriteBatch();
 
 		Pixmap pixel = new Pixmap(1, 1, Format.RGBA8888);
 		pixel.setColor(Color.WHITE);
@@ -504,10 +497,16 @@ public class Utils {
 	public static Component getComponent(String componentName) {
 		try {
 			File f = currentProject.path.child("Temp").child(componentName + ".jar").file();
+            System.out.println("Trying to load Component from " + f.getAbsolutePath());
             return javaComponentLoader.loadScript(f);
 		} catch (FileNotFoundException | ClassNotFoundException | MalformedURLException e) {
-			throw new RuntimeException(e);
-		}
+            try {
+                Thread.sleep(1000);
+                return getComponent(componentName);
+            } catch (InterruptedException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
     }
 
 	public static Class<?> getClass(String componentName) {
@@ -557,43 +556,34 @@ public class Utils {
 			float scY = scale.y / 2f;
 
 			if (editMode == 1) {
-				if (mouse.x > position.x + .2f && mouse.y > position.y - .1f && mouse.x < position.x + 1.5f && mouse.y < position.y + .1f) {
+				if (mouse.x > position.x + .2f && mouse.y > position.y - .1f && mouse.x < position.x + 1.5f && mouse.y < position.y + .1f)
 					canMoveX = true;
-				}
-				if (mouse.x > position.x - .1f && mouse.y > position.y + .2f && mouse.x < position.x + .1f && mouse.y < position.y + 1.5f) {
+				if (mouse.x > position.x - .1f && mouse.y > position.y + .2f && mouse.x < position.x + .1f && mouse.y < position.y + 1.5f)
 					canMoveY = true;
-				}
-				if (mouse.x > position.x && mouse.y > position.y && mouse.x < position.x + .2f && mouse.y < position.y + .2f) {
+				if (mouse.x > position.x && mouse.y > position.y && mouse.x < position.x + .2f && mouse.y < position.y + .2f)
 					canMove = true;
-				}
 			}
 			if (editMode == 2) {
-				if (mouse.x > position.x + .2f && mouse.y > position.y - .1f && mouse.x < position.x + 1.5f && mouse.y < position.y + .1f) {
+				if (mouse.x > position.x + .2f && mouse.y > position.y - .1f && mouse.x < position.x + 1.5f && mouse.y < position.y + .1f)
 					canScaleX = true;
-				}
-				if (mouse.x > position.x - .1f && mouse.y > position.y + .2f && mouse.x < position.x + .1f && mouse.y < position.y + 1.5f) {
+				if (mouse.x > position.x - .1f && mouse.y > position.y + .2f && mouse.x < position.x + .1f && mouse.y < position.y + 1.5f)
 					canScaleY = true;
-				}
 			}
 			if (editMode == 3) {
 				float dst = mouse.dst(position.x, position.y);
-				if (dst > 1.4f && dst < 1.6f) {
+				if (dst > 1.4f && dst < 1.6f)
 					canRotate = true;
-				}
 			}
 		}
 		if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT) && selectedGameObject != null) {
 			com.gameengine.api.math.Vector2 position = selectedGameObject.transform.position;
 			com.gameengine.api.math.Vector2 scale = selectedGameObject.transform.scale;
-			if (canMoveX) {
+			if (canMoveX)
 				moveXLock = true;
-			}
-			if (canMoveY) {
+			if (canMoveY)
 				moveYLock = true;
-			}
-			if (canMove) {
+			if (canMove)
 				moveLock = true;
-			}
 			if (canScaleX) scaleXLock = true;
 			if (canScaleY) scaleYLock = true;
 			if (canRotate) rotateLock = true;
@@ -605,22 +595,18 @@ public class Utils {
 		if (Gdx.input.isButtonPressed(Input.Buttons.LEFT) && selectedGameObject != null) {
 			com.gameengine.api.math.Vector2 position = selectedGameObject.transform.position;
 			com.gameengine.api.math.Vector2 scale = selectedGameObject.transform.scale;
-			if (moveXLock) {
+			if (moveXLock)
 				position.x = mouse.x + mouseOffsetX;
-			}
-			if (moveYLock) {
+			if (moveYLock)
 				position.y = mouse.y + mouseOffsetY;
-			}
 			if (moveLock) {
 				position.x = mouse.x + mouseOffsetX;
 				position.y = mouse.y + mouseOffsetY;
 			}
-			if (scaleXLock) {
+			if (scaleXLock)
 				scale.x = initialScaleX + (mouse.x - position.x) + mouseOffsetX;
-			}
-			if (scaleYLock) {
+			if (scaleYLock)
 				scale.y = initialScaleY + (mouse.y - position.y) + mouseOffsetY;
-			}
 			if (rotateLock) {
 
 				float val = MathUtils.atan2Deg(mouse.y - position.y, mouse.x - position.x);
@@ -707,6 +693,11 @@ public class Utils {
 		}
 	}
 
+    private static boolean checkFile(String f) {
+        File file = new File(f);
+        return file.exists() && !file.isDirectory();
+    }
+
 	public static void build(boolean showFolder) {
 
 		boolean exists = currentProject.path.child("Build").exists();
@@ -730,7 +721,23 @@ public class Utils {
 		copyScripts(gameFolder.child("assets"), src, "com.game.scripts");
 
 		FileHandle mainGameObject = gameFolder.child("assets").child("main.json");
-        mainGameObject.writeString(json.toJson(new SerializableGameObject(currentProject.rootGameObject)), false);
+        mainGameObject.writeString(json.toJson(new SerializableProject(currentProject)), false);
+
+        if (checkFile(currentProject.appIconLinux))
+            Gdx.files.absolute(currentProject.appIconLinux).copyTo(gameFolder.child("lwjgl3").child("icons"));
+        if (checkFile(currentProject.appIconWin))
+            Gdx.files.absolute(currentProject.appIconWin).copyTo(gameFolder.child("lwjgl3").child("icons"));
+        if (checkFile(currentProject.appIconMac))
+            Gdx.files.absolute(currentProject.appIconMac).copyTo(gameFolder.child("lwjgl3").child("icons"));
+
+        if (checkFile(currentProject.windowIcon16))
+            Gdx.files.absolute(currentProject.windowIcon16).copyTo(gameFolder.child("assets"));
+        if (checkFile(currentProject.windowIcon32))
+            Gdx.files.absolute(currentProject.windowIcon32).copyTo(gameFolder.child("assets"));
+        if (checkFile(currentProject.windowIcon64))
+            Gdx.files.absolute(currentProject.windowIcon64).copyTo(gameFolder.child("assets"));
+        if (checkFile(currentProject.windowIcon128))
+            Gdx.files.absolute(currentProject.windowIcon128).copyTo(gameFolder.child("assets"));
 
         ProcessBuilder pb = new ProcessBuilder(buildFolder.child("Temp").child("GameFolder").child("gradlew.bat").path(), "jar");
 		pb.directory(new File(gameFolder.file().getAbsolutePath()));
@@ -752,7 +759,7 @@ public class Utils {
 			}
         }
 
-		gameFolder.child("lwjgl3").child("build").child("lib").child("Game-0.1.0.jar").copyTo(buildFolder.child("Game.jar"));
+		gameFolder.child("lwjgl3").child("build").child("lib").child("Game-0.1.0.jar").copyTo(buildFolder.child(currentProject.buildName + "-" + currentProject.version + ".jar"));
 		gameFolder.parent().deleteDirectory();
 
 		if (showFolder) openFolder(buildFolder);
@@ -774,23 +781,9 @@ public class Utils {
         return search(currentProject.rootGameObject, ID);
     }
 
-    // https://stackoverflow.com/a/18509384
-    public static void openURL(String url) {if(Desktop.isDesktopSupported()){
-        Desktop desktop = Desktop.getDesktop();
-        try {
-            desktop.browse(new URI(url));
-        } catch (IOException | URISyntaxException e) {
-            e.printStackTrace();
-        }
-    }else{
-        Runtime runtime = Runtime.getRuntime();
-        try {
-            runtime.exec("xdg-open " + url);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
+    public static void copyTo(FileHandle src, FileHandle dest, String name) {
+        src.copyTo(dest);
+        dest.child(src.name()).moveTo(dest.child(name));
     }
 
     public static void buildApp() {
@@ -820,7 +813,23 @@ public class Utils {
         copyScripts(gameFolder.child("assets"), src, "com.game.scripts");
 
         FileHandle mainGameObject = gameFolder.child("assets").child("main.json");
-        mainGameObject.writeString(json.toJson(new SerializableGameObject(currentProject.rootGameObject)), false);
+        mainGameObject.writeString(json.toJson(new SerializableProject(currentProject)), false);
+
+        if (checkFile(currentProject.appIconLinux))
+            copyTo(Gdx.files.absolute(currentProject.appIconLinux), gameFolder.child("lwjgl3").child("icons"), "logo.png");
+        if (checkFile(currentProject.appIconWin))
+            copyTo(Gdx.files.absolute(currentProject.appIconWin), gameFolder.child("lwjgl3").child("icons"), "logo.ico");
+        if (checkFile(currentProject.appIconMac))
+            copyTo(Gdx.files.absolute(currentProject.appIconMac), gameFolder.child("lwjgl3").child("icons"), "logo.icns");
+
+        if (checkFile(currentProject.windowIcon16))
+            Gdx.files.absolute(currentProject.windowIcon16).copyTo(gameFolder.child("assets"));
+        if (checkFile(currentProject.windowIcon32))
+            Gdx.files.absolute(currentProject.windowIcon32).copyTo(gameFolder.child("assets"));
+        if (checkFile(currentProject.windowIcon64))
+            Gdx.files.absolute(currentProject.windowIcon64).copyTo(gameFolder.child("assets"));
+        if (checkFile(currentProject.windowIcon128))
+            Gdx.files.absolute(currentProject.windowIcon128).copyTo(gameFolder.child("assets"));
 
         ProcessBuilder pb = new ProcessBuilder(buildFolder.child("Temp").child("GameFolder").child("gradlew.bat").path(), "jpackageImage");
         pb.directory(new File(gameFolder.file().getAbsolutePath()));
@@ -899,6 +908,17 @@ public class Utils {
 
             addComponentsFields(map, gameObject);
         }
+    }
+
+    public static <T> boolean contains(T[] arr, T obj) {
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i] == obj) return true;
+        }
+        return false;
+    }
+
+    public static boolean isCtrlKeyPressed() {
+        return Gdx.input.isKeyPressed(Input.Keys.CONTROL_LEFT) || Gdx.input.isKeyPressed(Input.Keys.CONTROL_RIGHT);
     }
 
 }
