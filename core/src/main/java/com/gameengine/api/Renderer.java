@@ -1,5 +1,6 @@
 package com.gameengine.api;
 
+import com.badlogic.gdx.graphics.g2d.CpuSpriteBatch;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.gameengine.api.graphics.Material;
@@ -7,21 +8,21 @@ import com.gameengine.api.graphics.Shader;
 import com.gameengine.api.graphics.Texture;
 import com.gameengine.api.graphics.TextureAsset;
 import com.gameengine.api.math.MathUtils;
+import com.gameengine.api.math.Matrix4;
 import space.earlygrey.shapedrawer.JoinType;
 import space.earlygrey.shapedrawer.ShapeDrawer;
 
 public class Renderer {
 
-    static SpriteBatch batch;
+    static CpuSpriteBatch batch;
     static Sprite sprite;
     static ShapeDrawer drawer;
     static Texture defaultTexture;
     static CameraHolder cameraHolder;
     static Shader lastShader;
     static Material defaultMaterial;
-    public transient static float debugScale = 0;
 
-    static void init(SpriteBatch b, ShapeDrawer d, Sprite s, TextureAsset t, CameraHolder c, Material m) {
+    static void init(CpuSpriteBatch b, ShapeDrawer d, Sprite s, TextureAsset t, CameraHolder c, Material m) {
         batch = b;
         sprite = s;
         drawer = d;
@@ -68,7 +69,13 @@ public class Renderer {
         if (sprite.getTexture() != null) sprite.draw(batch);
     }
 
-    public static void drawGdxEmitter(com.badlogic.gdx.graphics.g2d.ParticleEmitter particleEmitter) { particleEmitter.draw(batch); }
+    private static final com.badlogic.gdx.math.Matrix4 transform = new com.badlogic.gdx.math.Matrix4();
+
+    public static void drawGdxEmitter(com.badlogic.gdx.graphics.g2d.ParticleEmitter particleEmitter, float rotation) {
+        batch.setTransformMatrix(transform.idt().rotate(0,0, 1,rotation));
+        particleEmitter.draw(batch);
+        batch.setTransformMatrix(transform.idt());
+    }
 
     public static Texture getDefaultTexture() {
         return defaultTexture;
@@ -85,12 +92,6 @@ public class Renderer {
         drawer.setColor(1, 1, 1, 1);
     }
 
-    public static void drawDebugRect(float x, float y, float width, float height, float rotation, com.gameengine.api.graphics.Color color, float strokeWidth) {
-        drawer.setColor(color.r, color.g, color.b, color.a);
-        drawer.rectangle(x - width / 2f, y - height / 2f, width, height, debugScale * strokeWidth, rotation * MathUtils.degToRad);
-        drawer.setColor(1, 1, 1, 1);
-    }
-
     public static void drawCircle(float x, float y, float radius, com.gameengine.api.graphics.Color color, float strokeWidth) {
         drawer.setColor(color.r, color.g, color.b, color.a);
         drawer.circle(x, y, radius, strokeWidth);
@@ -103,21 +104,9 @@ public class Renderer {
         drawer.setColor(1, 1, 1, 1);
     }
 
-    public static void drawDebugCircle(float x, float y, float radius, com.gameengine.api.graphics.Color color, float strokeWidth) {
-        drawer.setColor(color.r, color.g, color.b, color.a);
-        drawer.circle(x, y, radius, debugScale * strokeWidth);
-        drawer.setColor(1, 1, 1, 1);
-    }
-
     public static void drawPolygon(float[] vertices, com.gameengine.api.graphics.Color color, float strokeWidth) {
         drawer.setColor(color.r, color.g, color.b, color.a);
         drawer.polygon(vertices, strokeWidth, JoinType.SMOOTH);
-        drawer.setColor(1, 1, 1, 1);
-    }
-
-    public static void drawDebugPolygon(float[] vertices, com.gameengine.api.graphics.Color color, float strokeWidth) {
-        drawer.setColor(color.r, color.g, color.b, color.a);
-        drawer.polygon(vertices, debugScale * strokeWidth, JoinType.SMOOTH);
         drawer.setColor(1, 1, 1, 1);
     }
 
