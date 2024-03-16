@@ -6,7 +6,7 @@ import com.gameengine.api.graphics.Color;
 import com.gameengine.api.graphics.Material;
 import com.gameengine.api.graphics.Texture;
 
-public class Renderable extends Component {
+public class SpriteRenderer extends Component {
 
     public Texture texture = new Texture();
     public Color tint = new Color(Color.WHITE);
