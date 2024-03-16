@@ -25,15 +25,14 @@ public class GameObject implements Cloneable
 
     public ArrayList<GameObject> children = new ArrayList<>();
 
-    public GameObject parent; // Ignore
+    public GameObject parent;
     public int parentID;
 
-    public Transform transform = new Transform(); // Ignore
+    public Transform transform = new Transform();
 
-    public transient boolean renameMode = false; // Ignore
+    public transient boolean renameMode = false;
 
     public GameObject() {
-
     }
 
     public GameObject(String name) {
@@ -59,7 +58,9 @@ public class GameObject implements Cloneable
                 component.debugUpdate();
         }
         for (int i = 0; i < children.size(); i++) {
-            children.get(i).update();
+            GameObject child = children.get(i);
+            if (ID != 0) child.transform.position.set(transform.position.x + child.transform.localPosition.x, transform.position.y + child.transform.localPosition.y);
+            child.update();
         }
     }
 
@@ -87,6 +88,13 @@ public class GameObject implements Cloneable
         child.parent = this;
         children.add(child);
         Statics.allGameObjects.add(child);
+    }
+
+    public void removeGameObject(GameObject child) {
+        if (!children.contains(child)) return;
+        child.parent = null;
+        children.remove(child);
+        Statics.allGameObjects.removeValue(child, true);
     }
 
     public void addComponent(Component component) {

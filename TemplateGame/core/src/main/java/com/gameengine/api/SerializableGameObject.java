@@ -9,6 +9,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import static com.game.Statics.allGameObjects;
 import static com.game.Statics.engine;
 
 @NoArgsConstructor
@@ -65,7 +66,9 @@ public class SerializableGameObject {
         gameObject.ID = ID;
         gameObject.parent = parent;
         for (SerializableGameObject child : children) {
-            gameObject.children.add(child.createGameObject(gameObject));
+            GameObject o = child.createGameObject(gameObject);
+            allGameObjects.add(o);
+            gameObject.children.add(o);
         }
         for (String componentName : components) {
             if (componentName.startsWith("builtin.")) {

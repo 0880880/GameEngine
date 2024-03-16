@@ -6,9 +6,11 @@ import com.badlogic.gdx.physics.box2d.Fixture;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.game.Statics;
 import com.gameengine.api.Component;
+import com.gameengine.api.Debug;
 import com.gameengine.api.Renderer;
 import com.gameengine.api.graphics.Color;
 import com.gameengine.api.math.Vector2;
+import com.gameengine.api.physics.Physics;
 
 public class CircleCollider extends Component implements Collider {
 
@@ -20,6 +22,12 @@ public class CircleCollider extends Component implements Collider {
     public PhysicsFilter filter = new PhysicsFilter();
 
     private Fixture fixture;
+
+    public int ID;
+
+    public void start() {
+        ID = Physics.colliderCounter++;
+    }
 
     public Fixture createFixture(Body body) {
 
@@ -37,6 +45,9 @@ public class CircleCollider extends Component implements Collider {
         fixtureDef.filter.groupIndex = filter.groupIndex;
 
         fixture = body.createFixture(fixtureDef);
+        fixture.setUserData(Physics.colliderCounter);
+
+        Physics.addCollider(this, fixture);
 
         shape.dispose();
 
@@ -50,7 +61,12 @@ public class CircleCollider extends Component implements Collider {
 
     public void debugUpdate() {
         Vector2 position = gameObject.transform.position;
-        Renderer.drawDebugCircle(position.x, position.y, radius, Color.GREEN, 10);
+        Debug.circle(position.x, position.y, radius, Color.GREEN, 1);
+    }
+
+    @Override
+    public int hashCode() {
+        return Integer.hashCode(ID);
     }
 
 }

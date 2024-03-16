@@ -5,11 +5,15 @@ import com.gameengine.api.components.Transform;
 import com.gameengine.api.graphics.Material;
 import com.gameengine.api.graphics.Shader;
 import com.gameengine.api.graphics.TextureAsset;
+import com.gameengine.api.math.*;
 import com.gameengine.api.physics.Physics;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
-import java.util.function.Consumer;
+import java.util.HashSet;
+import java.util.Set;
+
 
 public class Engine {
 
@@ -31,7 +35,10 @@ public class Engine {
  
 HashMap<Long, HashMap<Class<? extends Component>, HashMap<String, Object>>> gameObjectsComponentsFieldMap = new HashMap<>();
 
- void copyComponentsFields(HashMap<Long, HashMap<Class<? extends Component>, HashMap<String, Object>>> map, GameObject parent) {}
+ public Object copyObject(Object object, Class<?> c) {return null;}
+
+ 
+void copyComponentsFields(HashMap<Long, HashMap<Class<? extends Component>, HashMap<String, Object>>> map, GameObject parent) {}
 
  void addComponentsFields(HashMap<Long, HashMap<Class<? extends Component>, HashMap<String, Object>>> map, GameObject parent) {}
 

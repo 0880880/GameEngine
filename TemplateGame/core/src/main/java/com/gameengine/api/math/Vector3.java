@@ -157,7 +157,7 @@ public class Vector3 {
         }
     }
 
-    public Vector3 copy() {
+    public Vector3 cpy() {
         return new Vector3(this);
     }
 

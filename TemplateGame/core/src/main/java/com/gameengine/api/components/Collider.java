@@ -1,15 +1,12 @@
 package com.gameengine.api.components;
 
-import com.badlogic.gdx.physics.box2d.Body;
-import com.badlogic.gdx.physics.box2d.Fixture;
-
 public interface Collider {
 
-    Fixture createFixture(Body body);
+    com.badlogic.gdx.physics.box2d.Fixture createFixture(com.badlogic.gdx.physics.box2d.Body body);
 
-    Fixture getFixture();
+    com.badlogic.gdx.physics.box2d.Fixture getFixture();
 
-    public class PhysicsFilter {
+    class PhysicsFilter {
 
         public short categoryBits = 1;
         public short maskBits = -1;

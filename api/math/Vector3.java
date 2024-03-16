@@ -92,7 +92,7 @@ public Vector3 crs(float x, float y, float z) {return null;}
 public boolean equals(Object obj) {return false;}
 
  
-public Vector3 copy() {return null;}
+public Vector3 cpy() {return null;}
 
 
 }

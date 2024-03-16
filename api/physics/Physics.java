@@ -5,31 +5,40 @@ import com.gameengine.api.GameObject;
 import com.gameengine.api.components.Collider;
 import com.gameengine.api.math.Vector2;
 
+import java.util.HashMap;
+
 public class Physics {
 
- private static Vector2 gravity = new Vector2(0, -9.81f);
- private static int velocityIterations = 6;
- private static int positionIterations = 2;
+
+ public static boolean enabled = true;
+ public static  Vector2 gravity = new Vector2(0, -9.81f);
+ public static int velocityIterations = 6;
+ public static int positionIterations = 2;
+
+ public static int colliderCounter = 0;
+
+ private static  HashMap<Integer, Collider> colliders = new HashMap<>();
 
  public static void start() {}
 
  private interface OnCollisionFunction {}
 
+ public interface RayCastCallback {}
+
+ public interface QueryCallback {}
+
 
 
  public static void stop() {}
+
 
  public static void step(float timeStep) {}
 
 
 
- public static int getVelocityIterations() {return 0;}
 
- 
-public static void setVelocityIterations(int velocityIterations) {}
+ public static void rayCast(RayCastCallback callback, float x0, float y0, float x1, float y1) {}
 
- public static int getPositionIterations() {return 0;}
+ public static void queryAABB(QueryCallback callback, float x0, float y0, float x1, float y1) {}
 
- 
-public static void setPositionIterations(int positionIterations) {}
 }

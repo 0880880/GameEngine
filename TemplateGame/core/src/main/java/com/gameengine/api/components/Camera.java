@@ -6,6 +6,7 @@ import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.game.Statics;
 import com.gameengine.api.Component;
+import com.gameengine.api.Debug;
 import com.gameengine.api.Renderer;
 import com.gameengine.api.graphics.Color;
 import com.gameengine.api.math.Vector2;
@@ -30,7 +31,7 @@ public class Camera extends Component {
 
     public void debugUpdate() {
         Vector2 position = gameObject.transform.position;
-        Renderer.drawDebugRect(position.x, position.y, size.x, size.y, 0, Color.WHITE, 1);
+        Debug.rectangle(position.x, position.y, size.x, size.y, 0, Color.WHITE, 1);
     }
 
     public void apply(SpriteBatch batch, int width, int height) {

@@ -16,12 +16,12 @@ public class GameObject implements Cloneable
 
 
 
- public GameObject parent; 
+ public GameObject parent;
  public int parentID;
 
- public Transform transform = new Transform(); 
+ public Transform transform = new Transform();
 
- public transient boolean renameMode = false; 
+ public transient boolean renameMode = false;
 
  public GameObject() {}
 
@@ -36,6 +36,8 @@ public class GameObject implements Cloneable
  void lateUpdate() {}
 
  public void addGameObject(GameObject child) {}
+
+ public void removeGameObject(GameObject child) {}
 
  public void addComponent(Component component) {}
 

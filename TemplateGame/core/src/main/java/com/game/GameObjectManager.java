@@ -7,6 +7,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.gameengine.api.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.CpuSpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ObjectMap;
@@ -73,6 +74,8 @@ public class GameObjectManager {
                                             f.set(cmp, (long) obj);
                                         } else if (type == Texture.class) {
                                             Texture tex = (Texture) obj;
+                                            if (tex.textureAsset == null)
+                                                tex.textureAsset = Renderer.getDefaultTexture().textureAsset;
                                             Texture newTex = new Texture(TextureManager.get(tex.textureAsset.getPath(), tex.textureAsset.getFilename()));
                                             newTex.uv0.set(tex.uv0);
                                             newTex.uv1.set(tex.uv1);
@@ -129,6 +132,8 @@ public class GameObjectManager {
                                         }
                                     } else if (type == Texture.class) {
                                         Texture tex = (Texture) obj;
+                                        if (tex.textureAsset == null)
+                                            tex.textureAsset = Renderer.getDefaultTexture().textureAsset;
                                         Texture newTex = new Texture(TextureManager.get(tex.textureAsset.getPath(), tex.textureAsset.getFilename()));
                                         newTex.uv0.set(tex.uv0);
                                         newTex.uv1.set(tex.uv1);
@@ -174,7 +179,7 @@ public class GameObjectManager {
     }
 
     Sprite sprite;
-    SpriteBatch batch;
+    CpuSpriteBatch batch;
     ShapeDrawer drawer;
 
     CameraHolder cameraHolder = new CameraHolder();
@@ -209,7 +214,7 @@ public class GameObjectManager {
 
         sprite = new Sprite();
 
-        batch = new SpriteBatch();
+        batch = new CpuSpriteBatch();
 
         Pixmap pixel = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pixel.setColor(Color.WHITE);
@@ -220,7 +225,10 @@ public class GameObjectManager {
 
         Statics.engine = engine;
 
-        main = createGameObject(json.fromJson(SerializableGameObject.class, Gdx.files.internal("main.json").readString()));
+        SerializableProject proj = json.fromJson(SerializableProject.class, Gdx.files.internal("main.json").readString());
+        Statics.currentProject = proj.createProject();
+
+        main = createGameObject(proj.rootGameObject);
 
         search(main);
 
@@ -232,6 +240,12 @@ public class GameObjectManager {
 
     public void start() {
         engine.start(main, false);
+        Gdx.graphics.setTitle(Statics.currentProject.windowTitle);
+        if (Statics.currentProject.fullscreen) {
+            Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
+        } else {
+            Gdx.graphics.setWindowedMode((int) Statics.currentProject.windowSize.x, (int) Statics.currentProject.windowSize.y);
+        }
     }
 
     public void update() {

@@ -90,7 +90,7 @@ public float angleDeg() {return 0.0f;}
 public boolean equals(Object obj) {return false;}
 
  
-public Vector2 copy() {return null;}
+public Vector2 cpy() {return null;}
 
  
 public String toString() {return null;}

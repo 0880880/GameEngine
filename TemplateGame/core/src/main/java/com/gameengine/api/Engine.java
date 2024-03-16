@@ -4,8 +4,8 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.g2d.CpuSpriteBatch;
 import com.badlogic.gdx.graphics.g2d.Sprite;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.game.Statics;
 import com.gameengine.api.audio.AudioClip;
@@ -13,18 +13,23 @@ import com.gameengine.api.components.Transform;
 import com.gameengine.api.graphics.Material;
 import com.gameengine.api.graphics.Shader;
 import com.gameengine.api.graphics.TextureAsset;
+import com.gameengine.api.math.*;
 import com.gameengine.api.physics.Physics;
 import com.game.Utils;
 import space.earlygrey.shapedrawer.ShapeDrawer;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.function.Consumer;
+import java.util.HashSet;
+import java.util.Set;
+
+import static com.game.Statics.selectedGameObject;
 
 public class Engine {
 
-    SpriteBatch batch;
+    CpuSpriteBatch batch;
     ShapeDrawer drawer;
     ShaderProgram defaultShader;
 
@@ -71,7 +76,7 @@ public class Engine {
         pixmap.setColor(Color.WHITE);
         pixmap.fill();
         defaultTextureAsset = new TextureAsset("internal", "NONAME", new com.badlogic.gdx.graphics.Texture(pixmap));
-        batch = (SpriteBatch) drawer.getBatch();
+        batch = (CpuSpriteBatch) drawer.getBatch();
         this.drawer = drawer;
 
         Material defaultMaterial = new Material();
@@ -87,6 +92,24 @@ public class Engine {
     ArrayList<GameObjectCondition> initialConditions;
     HashMap<Long, HashMap<Class<? extends Component>, HashMap<String, Object>>> gameObjectsComponentsFieldMap = new HashMap<>();
 
+    public Object copyObject(Object object, Class<?> c) {
+        if (c == Vector2.class)
+            object = ((Vector2) object).cpy();
+        else if (c == Vector3.class)
+            object = ((Vector3) object).cpy();
+        else if (c == Affine2.class)
+            object = new Affine2((Affine2) object);
+        else if (c == Matrix3.class)
+            object = new Matrix3((Matrix3) object);
+        else if (c == Matrix4.class)
+            object = new Matrix4((Matrix4) object);
+        else if (c == Quaternion.class)
+            object = ((Quaternion) object).cpy();
+        else if (c == Color.class)
+            object = ((Color) object).cpy();
+        return object;
+    }
+
     void copyComponentsFields(HashMap<Long, HashMap<Class<? extends Component>, HashMap<String, Object>>> map, GameObject parent) {
         for (GameObject gameObject : parent.children) {
             HashMap<Class<? extends Component>, HashMap<String, Object>> components = new HashMap<>();
@@ -96,7 +119,7 @@ public class Engine {
 
                 for (Field f : component.getClass().getFields()) {
                     try {
-                        fieldMap.put(f.getName(), f.get(component));
+                        fieldMap.put(f.getName(), copyObject(f.get(component), f.getType()));
                     } catch (IllegalAccessException e) {
                         throw new RuntimeException(e);
                     }
@@ -118,6 +141,27 @@ public class Engine {
 
                 HashMap<String, Object> fieldMap = components.get(key);
 
+                boolean exists = false;
+                for (int i = 0; i < gameObject.components.size(); i++) {
+                    if (gameObject.components.get(i).getClass() == key) {
+                        exists = true;
+                        break;
+                    }
+                }
+
+                if (!exists) {
+                    if (key.getModule() == Transform.class.getModule()) {
+                        try {
+                            gameObject.addComponent(key.getDeclaredConstructor().newInstance());
+                        } catch (InstantiationException | IllegalAccessException | InvocationTargetException |
+                                 NoSuchMethodException e) {
+                            throw new RuntimeException(e);
+                        }
+                    } else {
+                        gameObject.addComponent(Utils.getComponent(key.getSimpleName()));
+                    }
+                }
+
                 Component component = gameObject.getComponent(key);
 
                 for (String fieldName : fieldMap.keySet()) {
@@ -136,21 +180,10 @@ public class Engine {
     }
 
     public void addChildrenToICs(GameObject gameObject) {
-        /*for (int i = 0; i < gameObject.children.size(); i++) {
-            GameObject child = gameObject.children.get(i);
-            initialConditions.add(new GameObjectCondition(child));
-            if (child.children.size() > 0) {
-                addChildrenToICs(child);
-            }
-        }*/
         copyComponentsFields(gameObjectsComponentsFieldMap, gameObject);
     }
 
     public void applyICsToChildren() {
-       /* for (int i = 0; i < initialConditions.size(); i++) {
-            GameObjectCondition initialCondition = initialConditions.get(i);
-            initialCondition.apply();
-        }*/
         addComponentsFields(gameObjectsComponentsFieldMap, Statics.currentProject.rootGameObject);
     }
 

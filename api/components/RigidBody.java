@@ -46,5 +46,19 @@ public class RigidBody extends Component {
 
  public void setAngularVelocity(float omega) {}
 
+ private Vector2 tmp = new Vector2();
+
+ public Vector2 getLinearVelocity() {return null;}
+
+ 
+public float getLinearVelocityX() {return 0.0f;}
+
+ 
+public float getLinearVelocityY() {return 0.0f;}
+
+ 
+public float getAngularVelocity() {return 0.0f;}
+
+
 
 }

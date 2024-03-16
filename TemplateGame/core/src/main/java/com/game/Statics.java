@@ -35,8 +35,6 @@ public class Statics {
 
     public static boolean isGameRunning = true;
 
-    public static SecureRandom random = new SecureRandom();
-
     public static GameObjectManager gameObjectManager;
 
 }

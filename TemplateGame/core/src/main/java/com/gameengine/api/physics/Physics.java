@@ -1,29 +1,51 @@
 package com.gameengine.api.physics;
 
-import com.badlogic.gdx.physics.box2d.*;
-import com.badlogic.gdx.utils.Array;
+import com.game.Statics;
 import com.gameengine.api.Component;
 import com.gameengine.api.GameObject;
 import com.gameengine.api.components.Collider;
 import com.gameengine.api.math.Vector2;
 import com.game.Utils;
 
+import java.util.HashMap;
+
 public class Physics {
 
-    private static Vector2 gravity = new Vector2(0, -9.81f);
-    private static World world;
-    private static int velocityIterations = 6;
-    private static int positionIterations = 2;
+    private static com.badlogic.gdx.physics.box2d.World world;
+
+    public static boolean enabled = true;
+    public static  Vector2 gravity = new Vector2(0, -9.81f);
+    public static int velocityIterations = 6;
+    public static int positionIterations = 2;
+
+    public static int colliderCounter = 0;
+
+    private static  HashMap<Integer, Collider> colliders = new HashMap<>();
 
     public static void start() {
-        world = new World(new com.badlogic.gdx.math.Vector2(gravity.x, gravity.y), true);
+        colliderCounter = 0;
+        enabled = Statics.currentProject.physicsEnabled;
+        gravity.set(Statics.currentProject.physicsGravity);
+        velocityIterations = Statics.currentProject.physicsVelocityIterations;
+        positionIterations = Statics.currentProject.physicsPositionIterations;
+
+        world = new com.badlogic.gdx.physics.box2d.World(new com.badlogic.gdx.math.Vector2(gravity.x, gravity.y), true);
+        colliders.clear();
     }
 
     private interface OnCollisionFunction {
         void onCollision(Collision collision);
     }
 
-    private static void enter(Fixture fixture) {
+    public interface RayCastCallback {
+        float reportRayCollider(Collider collider, Vector2 position, Vector2 normal, float fraction);
+    }
+
+    public interface QueryCallback {
+        boolean reportCollider(Collider collider);
+    }
+
+    private static void enter(com.badlogic.gdx.physics.box2d.Fixture fixture) {
         int ID = (int) fixture.getBody().getUserData();
         GameObject gameObject = Utils.getGameObject(ID);
         Collider collider = null;
@@ -41,7 +63,7 @@ public class Physics {
         }
     }
 
-    private static void leave(Fixture fixture) {
+    private static void leave(com.badlogic.gdx.physics.box2d.Fixture fixture) {
         int ID = (int) fixture.getBody().getUserData();
         GameObject gameObject = Utils.getGameObject(ID);
         Collider collider = null;
@@ -60,60 +82,60 @@ public class Physics {
     }
 
     public static void stop() {
-        Array<Body> bodies = new Array<>();
+        com.badlogic.gdx.utils.Array<com.badlogic.gdx.physics.box2d.Body> bodies = new com.badlogic.gdx.utils.Array<>();
         world.getBodies(bodies);
-        for (Body body : bodies) {
+        for (com.badlogic.gdx.physics.box2d.Body body : bodies) {
             world.destroyBody(body);
         }
-        world.setContactListener(new ContactListener() {
+        world.setContactListener(new com.badlogic.gdx.physics.box2d.ContactListener() {
             @Override
-            public void beginContact(Contact contact) {
+            public void beginContact(com.badlogic.gdx.physics.box2d.Contact contact) {
                 enter(contact.getFixtureA());
                 enter(contact.getFixtureB());
             }
 
             @Override
-            public void endContact(Contact contact) {
+            public void endContact(com.badlogic.gdx.physics.box2d.Contact contact) {
                 leave(contact.getFixtureA());
                 leave(contact.getFixtureB());
             }
 
             @Override
-            public void preSolve(Contact contact, Manifold oldManifold) { }
+            public void preSolve(com.badlogic.gdx.physics.box2d.Contact contact, com.badlogic.gdx.physics.box2d.Manifold oldManifold) { }
 
             @Override
-            public void postSolve(Contact contact, ContactImpulse impulse) { }
+            public void postSolve(com.badlogic.gdx.physics.box2d.Contact contact, com.badlogic.gdx.physics.box2d.ContactImpulse impulse) { }
         });
         bodies.clear();
         world.dispose();
     }
 
+    private static  com.badlogic.gdx.math.Vector2 tmpVec = new com.badlogic.gdx.math.Vector2();
+
     public static void step(float timeStep) {
+        world.setGravity(tmpVec.set(gravity.x, gravity.y));
         world.step(timeStep, velocityIterations, positionIterations);
     }
 
-    public static Body createBody(BodyDef bodyDef) {
+    public static com.badlogic.gdx.physics.box2d.Body createBody(com.badlogic.gdx.physics.box2d.BodyDef bodyDef) {
         return world.createBody(bodyDef);
     }
 
-    public static Joint createJoint(JointDef jointDef) {
+    public static com.badlogic.gdx.physics.box2d.Joint createJoint(com.badlogic.gdx.physics.box2d.JointDef jointDef) {
         return world.createJoint(jointDef);
     }
 
-    public static int getVelocityIterations() {
-        return velocityIterations;
+    public static void addCollider(Collider collider, com.badlogic.gdx.physics.box2d.Fixture fixture) {
+        colliders.put((int) fixture.getUserData(), collider);
     }
 
-    public static void setVelocityIterations(int velocityIterations) {
-        Physics.velocityIterations = velocityIterations;
+    public static void rayCast(RayCastCallback callback, float x0, float y0, float x1, float y1) {
+        world.rayCast((fixture, point, normal, fraction) -> callback.reportRayCollider(colliders.get((int) fixture.getUserData()), new Vector2(point.x, point.y), new Vector2(normal.x, normal.y), fraction), x0, y0, x1, y1);
     }
 
-    public static int getPositionIterations() {
-        return positionIterations;
+    public static void queryAABB(QueryCallback callback, float x0, float y0, float x1, float y1) {
+        world.QueryAABB(fixture -> callback.reportCollider(colliders.get((int) fixture.getUserData())), x0, y0, x1, y1);
     }
 
-    public static void setPositionIterations(int positionIterations) {
-        Physics.positionIterations = positionIterations;
-    }
 }
 

@@ -1,9 +1,6 @@
 package com.gameengine.api.components;
 
-import com.gameengine.api.Component;
-import com.gameengine.api.Curve;
-import com.gameengine.api.Renderer;
-import com.gameengine.api.Time;
+import com.gameengine.api.*;
 import com.gameengine.api.graphics.Color;
 import com.gameengine.api.graphics.Texture;
 import com.gameengine.api.math.MathUtils;
@@ -23,12 +20,12 @@ private float[] getScaling(Curve curve) {return null;}
  
 private float[] getScaling(Curve curve, float[] scaling) {return null;}
 
+
+
  
-private void setProperties() {}
-
-
- public ParticleEffect particleEffect = new ParticleEffect();
+public ParticleEffect particleEffect = new ParticleEffect();
  public Vector2 position = new Vector2();
+ public float rotation = 0;
  public boolean startOnAwake;
 
  public void start() {}

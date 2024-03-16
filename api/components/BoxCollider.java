@@ -1,9 +1,11 @@
 package com.gameengine.api.components;
 
 import com.gameengine.api.Component;
+import com.gameengine.api.Debug;
 import com.gameengine.api.Renderer;
 import com.gameengine.api.graphics.Color;
 import com.gameengine.api.math.Vector2;
+import com.gameengine.api.physics.Physics;
 
 public class BoxCollider extends Component implements Collider {
 
@@ -17,8 +19,15 @@ public class BoxCollider extends Component implements Collider {
  public PhysicsFilter filter = new PhysicsFilter();
 
 
+ public int ID;
+
+ public void start() {}
+
 
 
  public void debugUpdate() {}
+
+ @Override
+ public int hashCode() {return 0;}
 
 }

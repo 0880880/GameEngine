@@ -4,9 +4,11 @@ import com.badlogic.gdx.math.Vector4;
 import com.badlogic.gdx.physics.box2d.*;
 import com.gameengine.api.Button;
 import com.gameengine.api.Component;
+import com.gameengine.api.Debug;
 import com.gameengine.api.Renderer;
 import com.gameengine.api.graphics.Color;
 import com.gameengine.api.math.Vector2;
+import com.gameengine.api.physics.Physics;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +23,12 @@ public class PolygonCollider extends Component implements Collider {
     public PhysicsFilter filter = new PhysicsFilter();
 
     private Fixture fixture;
+
+    public int ID;
+
+    public void start() {
+        ID = Physics.colliderCounter++;
+    }
 
     public Fixture createFixture(Body body) {
 
@@ -42,6 +50,9 @@ public class PolygonCollider extends Component implements Collider {
         fixtureDef.filter.groupIndex = filter.groupIndex;
 
         fixture = body.createFixture(fixtureDef);
+        fixture.setUserData(Physics.colliderCounter);
+
+        Physics.addCollider(this, fixture);
 
         shape.dispose();
 
@@ -65,9 +76,13 @@ public class PolygonCollider extends Component implements Collider {
                 verticesArr[i] = vertices.get(i).x + position.x;
                 verticesArr[i + 1] = vertices.get(i).y + position.y;
             }
-            Renderer.drawDebugPolygon(verticesArr, Color.GREEN, 10);
+            Debug.polygon(verticesArr, Color.GREEN, 1);
         }
     }
 
+    @Override
+    public int hashCode() {
+        return Integer.hashCode(ID);
+    }
 }
 
