@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.input.GestureDetector;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
@@ -20,12 +21,12 @@ import com.gameengine.utils.RenderUtils;
 import com.gameengine.utils.Utils;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import static com.gameengine.Statics.*;
@@ -46,11 +47,24 @@ public class Editor implements Screen {
 
     Array<FileHandle> shaderUpdates = new Array<>();
 
+    float lastX = 0;
+    float lastY = 0;
+
+    Color tmp = new Color();
+
+    Vector2 start = new Vector2();
+
+    Vector2 positionOffset = new Vector2();
+    float initialScale;
+
+    GameObject[] copyArray;
+    boolean cutPaste = false;
+
 	@Override
 	public void show() {
 		builtInComponents.add(Transform.class);
 		builtInComponents.add(Camera.class);
-        builtInComponents.add(Renderable.class);
+        builtInComponents.add(SpriteRenderer.class);
         builtInComponents.add(AudioListener.class);
         builtInComponents.add(AudioSource.class);
 
@@ -79,8 +93,10 @@ public class Editor implements Screen {
                                     FileHandle shaderFile = currentProject.path.child("Assets").child(file);
                                     shaderUpdates.add(shaderFile);
                                 }
-                                for (Material material : engine.loadedMaterials.values()) {
-                                    material.update();
+                                if (engine != null) {
+                                    for (Material material : engine.loadedMaterials.values()) {
+                                        material.update();
+                                    }
                                 }
 							}
 						}
@@ -185,13 +201,6 @@ public class Editor implements Screen {
 
 	}
 
-	float lastX = 0;
-	float lastY = 0;
-
-	Color tmp = new Color();
-
-    Vector2 start = new Vector2();
-
 	boolean copyComponents(GameObject gameObject) {
 		for (int i = 0; i < gameObject.components.size(); i++) {
 			Component component = gameObject.components.get(i);
@@ -207,8 +216,6 @@ public class Editor implements Screen {
 		return false;
 	}
 
-	Vector2 positionOffset = new Vector2();
-
     private void setMouse() {
         mouse.set(Gdx.input.getX(), Gdx.graphics.getHeight() - Gdx.input.getY());
         mouse.sub(gui.sceneX,-gui.sceneY);
@@ -221,10 +228,17 @@ public class Editor implements Screen {
         mouse.set(mouse.x, mouse.y + editorCamera.position.y * 2);
     }
 
+    float[] matrixTranslation = new float[3], matrixRotation = new float[3], matrixScale = new float[3];
+    float[] modelMatrix = new float[16];
+
 	@Override
 	public void render(float delta) {
 
-        ScreenUtils.clear(0,0,0,1);
+        ScreenUtils.clear(0, 0, 0, 1);
+
+        if (currentProject != null) {
+            Gdx.graphics.setTitle("Game Engine - " + currentProject.projectName);
+        }
 
         if (reload && !isGameRunning) {
 
@@ -252,6 +266,54 @@ public class Editor implements Screen {
             Utils.setGameObjectCounter();
 
             reload = false;
+        }
+
+        boolean cKeyPressed = Gdx.input.isKeyJustPressed(Input.Keys.C);
+        boolean xKeyPressed = Gdx.input.isKeyJustPressed(Input.Keys.X);
+
+        if (selectedGameObjects != null && Utils.isCtrlKeyPressed() && (cKeyPressed || xKeyPressed)) {
+            copyArray = Arrays.copyOf(selectedGameObjects, selectedGameObjects.length);
+            if (xKeyPressed) cutPaste = true;
+            else cutPaste = false;
+        }
+        if (selectedGameObjects == null && selection != null && selection.getClass() == GameObject.class
+            && Utils.isCtrlKeyPressed() && (cKeyPressed || xKeyPressed)) {
+            copyArray = new GameObject[] {(GameObject) selection};
+            if (xKeyPressed) cutPaste = true;
+            else cutPaste = false;
+        }
+
+        if (selection != null && Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            if (selectedGameObjects == null) {
+                selection = null;
+            } else {
+                selectedGameObjects = null;
+            }
+        }
+        if (selection != null && selection.getClass() == GameObject.class && Gdx.input.isKeyJustPressed(Input.Keys.FORWARD_DEL)) {
+            if (selectedGameObjects == null) {
+                if (((GameObject) selection).parent != null)
+                    ((GameObject) selection).parent.removeGameObject((GameObject) selection);
+            } else {
+                for (GameObject gameObject : selectedGameObjects) {
+                    gameObject.parent.removeGameObject(gameObject);
+                }
+            }
+        }
+
+        if (selection != null && selection.getClass() == GameObject.class && Utils.isCtrlKeyPressed()
+            && Gdx.input.isKeyJustPressed(Input.Keys.V) && copyArray != null) {
+            GameObject selectedGameObject = (GameObject) selection;
+            if (!Utils.contains(copyArray, selectedGameObject)) {
+                for (GameObject gameObject : copyArray) {
+                    SerializableGameObject serializableGameObject = new SerializableGameObject(gameObject);
+                    serializableGameObject.createGameObject(selectedGameObject);
+                    selectedGameObject.children.add(gameObject);
+                    if (cutPaste) gameObject.parent.removeGameObject(gameObject);
+                }
+                if (cutPaste) copyArray = null;
+                cutPaste = false;
+            }
         }
 
         fbo.begin();
@@ -352,18 +414,33 @@ public class Editor implements Screen {
 				positionOffset.set(-mouse.x + position.x, -mouse.y + position.y);
 			}
 
-			if (editMode >= 4 && (Gdx.input.isTouched() || Gdx.input.isKeyJustPressed(Input.Keys.ENTER) || Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE))) editMode = 0;
-			if (editMode == 4) {
-				selectedGameObject.transform.position.set(mouse.x, mouse.y).add(positionOffset.x, positionOffset.y);
-			}
+            if (Gdx.input.isKeyJustPressed(Input.Keys.S) && !gui.isAnyWindowHovered) {
+                if (editMode == 5) editMode = 0;
+                else editMode = 5;
+                positionOffset.set(-mouse.x + position.x, -mouse.y + position.y);
+                initialScale = Vector2.len(scale.x, scale.y);
+            }
 
-			if (Gdx.input.isKeyJustPressed(Input.Keys.S) && !gui.isAnyWindowHovered) {
-				editMode = 5;
-			}
+            if (Gdx.input.isKeyJustPressed(Input.Keys.R) && !gui.isAnyWindowHovered) {
+                if (editMode == 6) editMode = 0;
+                else editMode = 6;
+            }
 
-			if (Gdx.input.isKeyJustPressed(Input.Keys.R) && !gui.isAnyWindowHovered) {
-				editMode = 6;
-			}
+            if (editMode >= 4 && (Gdx.input.isTouched() || Gdx.input.isKeyJustPressed(Input.Keys.ENTER) || Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE))) editMode = 0;
+            if (editMode == 4)
+                selectedGameObject.transform.position.set(mouse.x, mouse.y).add(positionOffset.x, positionOffset.y);
+
+            if (editMode >= 5 && (Gdx.input.isTouched() || Gdx.input.isKeyJustPressed(Input.Keys.ENTER) || Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE))) editMode = 0;
+            if (editMode == 5) {
+                float len = Vector2.len((mouse.x - position.x) + positionOffset.x, (mouse.y - position.y) + positionOffset.y);
+                scale.x = initialScale + len;
+                scale.y = initialScale + len;
+            }
+
+            if (editMode >= 6 && (Gdx.input.isTouched() || Gdx.input.isKeyJustPressed(Input.Keys.ENTER) || Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE))) editMode = 0;
+            if (editMode == 6) {
+                selectedGameObject.transform.rotation = com.gameengine.api.math.MathUtils.atan2Deg(mouse.y - position.y, mouse.x - position.x);
+            }
 
 			if (editMode == 1) {
 				RenderUtils.renderArrow(position.x, position.y, position.x + 1.5f, position.y, .2f, .2f, Color.RED, .02f * editorCamera.zoom);
