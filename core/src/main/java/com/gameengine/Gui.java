@@ -6,7 +6,6 @@ import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Graphics;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.Cursor;
 import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.glutils.FrameBuffer;
 import com.badlogic.gdx.math.*;
 import com.gameengine.api.*;
@@ -19,10 +18,15 @@ import com.gameengine.api.math.Matrix3;
 import com.gameengine.api.math.Matrix4;
 import com.gameengine.api.math.Vector2;
 import com.gameengine.api.math.Vector3;
+import com.gameengine.utils.GameObjectPreset;
 import com.gameengine.utils.Utils;
 import de.pottgames.tuningfork.BufferedSoundSource;
 
+import imgui.ImGuiStyle;
 import imgui.ImVec2;
+import imgui.extension.imguizmo.ImGuizmo;
+import imgui.extension.imguizmo.flag.Mode;
+import imgui.extension.imguizmo.flag.Operation;
 import imgui.internal.ImGui;
 import imgui.ImGuiIO;
 import imgui.ImGuiViewport;
@@ -34,6 +38,7 @@ import imgui.type.*;
 import lombok.AllArgsConstructor;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.nfd.NativeFileDialog;
 
@@ -90,6 +95,7 @@ public class Gui {
     public boolean isAnyWindowHovered = false;
 
     private final ImBoolean showPreferences = new ImBoolean(false);
+    private final ImBoolean showProjectSettings = new ImBoolean(false);
 
     private final ImString imString = new ImString();
 
@@ -122,6 +128,30 @@ public class Gui {
 
     int buildProgress = -1;
 
+    GameObjectPreset emptyGameObjectPreset = (name, parent) -> {
+        GameObject gameObject = new GameObject(name);
+        parent.addGameObject(gameObject);
+        return gameObject;
+    };
+
+    GameObjectPreset spriteGameObjectPreset = (name, parent) -> {
+        GameObject gameObject = new GameObject(name);
+        gameObject.transform.scale.set(1,1);
+        gameObject.addComponent(new SpriteRenderer());
+        parent.addGameObject(gameObject);
+        return gameObject;
+    };
+
+    GameObjectPreset physicsSpriteGameObjectPreset = (name, parent) -> {
+        GameObject gameObject = new GameObject(name);
+        gameObject.transform.scale.set(1,1);
+        gameObject.addComponent(new SpriteRenderer());
+        gameObject.addComponent(new RigidBody());
+        gameObject.addComponent(new BoxCollider());
+        parent.addGameObject(gameObject);
+        return gameObject;
+    };
+
     public Gui() {
 
         long handle = ((Lwjgl3Graphics) Gdx.graphics).getWindow().getWindowHandle();
@@ -135,6 +165,15 @@ public class Gui {
 
         io = ImGui.getIO();
         io.setConfigWindowsMoveFromTitleBarOnly(true);
+        ImGui.getStyle().setFrameBorderSize(1);
+        ImGui.getStyle().setTabBorderSize(1);
+        ImGui.getStyle().setWindowRounding(3);
+        ImGui.getStyle().setFrameRounding(3);
+        ImGui.getStyle().setPopupRounding(3);
+        ImGui.getStyle().setTabRounding(3);
+        ImGui.getStyle().setGrabRounding(3);
+        ImGui.getStyle().setLogSliderDeadzone(3);
+        ImGui.getStyle().setColorButtonPosition(ImGuiDir.Left);
 
         version = Runtime.version();
 
@@ -169,12 +208,48 @@ public class Gui {
         createAssets(currentProject.path.child("Assets"), "main");
     }
 
-    void treeNodeContextMenu(GameObject object) {
-        if (ImGui.beginPopupContextItem(object.ID + "PopupContext")) {
-            if (ImGui.selectable("New Empty Object")) {
-                GameObject newEmpty = new GameObject("Empty Object");
-                object.addGameObject(newEmpty);
+    private boolean gameObjectExists(GameObject parent, String name) {
+        boolean exists = false;
+        for (int i = 0; i < parent.children.size(); i++) {
+            if (parent.children.get(i).name.equals(name)) {
+                exists = true;
+                break;
             }
+        }
+        return exists;
+    }
+
+    String getName(GameObject parent, String name) {
+        boolean exists = gameObjectExists(parent, name);
+        int i = 0;
+        while (exists) {
+            i++;
+            name = name + " (" + i + ")";
+            exists = gameObjectExists(parent, name);
+        }
+        return name;
+    }
+
+    void treeNodeContextMenu(GameObject object) {
+        ImGui.setNextWindowSizeConstraints(150, 0, 150, 10000);
+        if (ImGui.beginPopupContextItem(object.ID + "PopupContext")) {
+            ImGui.setNextWindowSizeConstraints(150, 0, 150, 10000);
+            if (ImGui.beginMenu("New")) {
+                if (ImGui.selectable("Empty Object")) {
+                    String name = getName(object, "Empty Object");
+                    emptyGameObjectPreset.create(name, object);
+                }
+                if (ImGui.selectable("Sprite")) {
+                    String name = getName(object, "Sprite");
+                    spriteGameObjectPreset.create(name, object);
+                }
+                if (ImGui.selectable("Box Physics")) {
+                    String name = getName(object, "Box Physics");
+                    physicsSpriteGameObjectPreset.create(name, object);
+                }
+                ImGui.endMenu();
+            }
+            ImGui.separator();
             if (ImGui.selectable("Delete")) {
                 object.parent.children.remove(object);
             }
@@ -183,14 +258,28 @@ public class Gui {
         }
     }
 
-    public void drawTreeChildren(GameObject base) {
+    public void drawTreeChildren(GameObject base, boolean selected) {
         for (int i = 0; i < base.children.size(); i++) {
             GameObject child = base.children.get(i);
+
             if (!child.children.isEmpty()) {
+
+                boolean sel = false;
 
                 boolean treeOpen = false;
                 if (!child.renameMode) {
-                    treeOpen = ImGui.treeNodeEx(child.name, ImGuiTreeNodeFlags.SpanFullWidth);
+                    String name = child.name;
+                    ImGui.getWindowDrawList().channelsSplit(2);
+                    ImGui.getWindowDrawList().channelsSetCurrent(1);
+                    treeOpen = ImGui.treeNodeEx(name, ImGuiTreeNodeFlags.SpanFullWidth);
+                    ImGui.getWindowDrawList().channelsSetCurrent(0);
+                    if (selectedGameObjects != null && Utils.contains(selectedGameObjects, child) || selection == child || selected) {
+                        ImVec2 p_min = ImGui.getItemRectMin();
+                        ImVec2 p_max = ImGui.getItemRectMax();
+                        ImGui.getWindowDrawList().addRectFilled(p_min.x, p_min.y, p_max.x, p_max.y, ImGui.getColorU32(selected ? ImGuiCol.Button : (selection == child ? ImGuiCol.ButtonActive : ImGuiCol.Button)));
+                        if (selection != child) sel = true;
+                    }
+                    ImGui.getWindowDrawList().channelsMerge();
                     if (ImGui.isItemHovered() && ImGui.isMouseDoubleClicked(0)) {
                         child.renameMode = true;
                         renameData.set(child.name);
@@ -206,16 +295,79 @@ public class Gui {
                     }
                 }
                 treeNodeContextMenu(child);
-                if (ImGui.isItemClicked())
+
+                if (ImGui.isItemClicked()) {
                     selection = child;
+                }
                 if (treeOpen) {
-                    //drawTreeChildren(child);
+                    drawTreeChildren(child, sel);
                     ImGui.treePop();
                 }
             } else {
                 if (!child.renameMode) {
+                    ImGui.getWindowDrawList().channelsSplit(2);
+                    ImGui.getWindowDrawList().channelsSetCurrent(1);
                     if (ImGui.selectable(child.name)) {
+                        if ((Gdx.input.isKeyPressed(Input.Keys.SHIFT_LEFT) || Gdx.input.isKeyPressed(Input.Keys.SHIFT_RIGHT))
+                            && selection != null && selection != child && selection.getClass() == GameObject.class &&
+                            base.children.contains(selection)) {
+                            int dstIdx = base.children.indexOf(selection);
+
+                            int n = Math.abs(dstIdx - i) + 1;
+                            selectedGameObjects = new GameObject[n];
+
+                            if (dstIdx > i) {
+                                int idx = 0;
+                                for (int j = i; j <= dstIdx; j++) {
+                                    selectedGameObjects[idx] = base.children.get(j);
+                                    idx++;
+                                }
+                            } else {
+                                int idx = 0;
+                                for (int j = i; j >= dstIdx; j--) {
+                                    selectedGameObjects[idx] = base.children.get(j);
+                                    idx++;
+                                }
+                            }
+                        } else {
+                            selectedGameObjects = null;
+                        }
                         selection = child;
+                    }
+                    ImGui.getWindowDrawList().channelsSetCurrent(0);
+                    if (selectedGameObjects != null && Utils.contains(selectedGameObjects, child) || selection == child || selected) {
+                        ImVec2 p_min = ImGui.getItemRectMin();
+                        ImVec2 p_max = ImGui.getItemRectMax();
+                        ImGui.getWindowDrawList().addRectFilled(p_min.x, p_min.y, p_max.x, p_max.y, ImGui.getColorU32(selected ? ImGuiCol.Button : (selection == child ? ImGuiCol.ButtonActive : ImGuiCol.Button)));
+                    }
+                    ImGui.getWindowDrawList().channelsMerge();
+                    if (ImGui.beginDragDropSource()) {
+                        ImGui.setDragDropPayload("GameObject", child);
+                        ImGui.selectable(child.name);
+                        ImGui.endDragDropSource();
+                    }
+                    if (ImGui.beginDragDropTarget()) {
+                        Object payload = ImGui.acceptDragDropPayload("GameObject");
+                        if (payload != null && payload.getClass() == GameObject.class) {
+                            GameObject g = (GameObject) payload;
+                            g.parent.children.remove(g);
+                            child.children.add(g);
+                            g.parent = child;
+                        }
+                        ImGui.endDragDropTarget();
+                    }
+                    ImGui.setCursorPosY(ImGui.getCursorPosY() - 3);
+                    ImGui.invisibleButton("##GameObject_" + child.ID + "_TARGET", ImGui.getContentRegionAvailX(), 6);
+                    ImGui.setCursorPosY(ImGui.getCursorPosY() - 3);
+                    if (ImGui.beginDragDropTarget()) {
+                        Object payload = ImGui.acceptDragDropPayload("GameObject");
+                        if (payload != null && payload.getClass() == GameObject.class) {
+                            GameObject g = (GameObject) payload;
+                            g.parent.children.remove(g);
+                            child.parent.children.add(child.parent.children.indexOf(child) + 1, g);
+                            g.parent = child.parent;
+                        }
+                        ImGui.endDragDropTarget();
                     }
                     if (ImGui.isItemHovered() && ImGui.isMouseDoubleClicked(0)) {
                         child.renameMode = true;
@@ -238,9 +390,7 @@ public class Gui {
 
     private Rectangle rectangleFromGameObject(GameObject gameObject) {
         Rectangle rectangle = new Rectangle();
-
         rectangle.set(gameObject.transform.position.x - gameObject.transform.scale.x / 2f, gameObject.transform.position.y - gameObject.transform.scale.y / 2f, gameObject.transform.scale.x, gameObject.transform.scale.y);
-
         return rectangle;
     }
 
@@ -248,6 +398,8 @@ public class Gui {
         imString.set(text);
         ImGui.text(label);
         ImGui.sameLine();
+        ImGui.setCursorPosX(200);
+        ImGui.setNextItemWidth(700);
         ImGui.inputText("##" + label, imString);
         return imString.get();
     }
@@ -264,17 +416,17 @@ public class Gui {
 
     void mainMenuBar() {
 
-        ImGui.beginMainMenuBar();
-
         menuBarSize = ImGui.getWindowHeight();
 
         if (ImGui.beginMenu("File")) {
 
-            ImGui.menuItem("New");
-            if (ImGui.menuItem("Save")) {
+            if (ImGui.menuItem("New", "Ctrl+N") || (Utils.isCtrlKeyPressed() && Gdx.input.isKeyJustPressed(Input.Keys.N))) {
+                System.out.println("New Project");
+            }
+            if (ImGui.menuItem("Save", "Ctrl+S") || (Utils.isCtrlKeyPressed() && Gdx.input.isKeyJustPressed(Input.Keys.S))) {
                 Utils.save();
             }
-            if (ImGui.menuItem("Open")) {
+            if (ImGui.menuItem("Open", "Ctrl+O") || (Utils.isCtrlKeyPressed() && Gdx.input.isKeyJustPressed(Input.Keys.O))) {
                 PointerBuffer path = MemoryUtil.memCallocPointer(1);
 
                 int res = NativeFileDialog.NFD_PickFolder("", path);
@@ -287,7 +439,7 @@ public class Gui {
             }
             ImGui.separator();
             ImGui.beginDisabled(currentProject == null);
-            if (ImGui.menuItem("Build")) {
+            if (ImGui.menuItem("Build", "Ctrl+B") || (Utils.isCtrlKeyPressed() && Gdx.input.isKeyJustPressed(Input.Keys.S))) {
                 toggleBuildWindow.set(!toggleBuildWindow.get());
             }
             ImGui.endDisabled();
@@ -303,6 +455,19 @@ public class Gui {
             ImGui.endMenu();
         }
 
+    }
+
+    public void renderMainMenu() {
+
+        isAnyWindowHovered = false;
+
+        imGuiGlfw.newFrame();
+        ImGui.newFrame();
+
+        ImGui.beginMainMenuBar();
+
+        mainMenuBar();
+
         ImGui.endMainMenuBar();
 
         if (showPreferences.get()) {
@@ -315,17 +480,6 @@ public class Gui {
 
             ImGui.end();
         }
-
-    }
-
-    public void renderMainMenu() {
-
-        isAnyWindowHovered = false;
-
-        imGuiGlfw.newFrame();
-        ImGui.newFrame();
-
-        mainMenuBar();
 
         ImGui.setNextWindowPos(0,menuBarSize);
         ImGui.setNextWindowSize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight() - menuBarSize);
@@ -472,24 +626,32 @@ public class Gui {
 
         if (ImGui.getStateStorage().getBool(ImGui.getID(ID + "_cp"), false)) {
             Color c = colorRange.getColor(ImGui.getStateStorage().getInt(ImGui.getID(ID + "_cp_p"), 0));
+            ImGui.setNextWindowPos(ImGui.getCursorScreenPosX() - 200, ImGui.getCursorScreenPosY() - 300);
+            ImGui.setNextWindowSize(250, 250);
+            ImGui.begin("Color Picker");
             colorPickerCol[0] = ImGui.getStateStorage().getFloat(ImGui.getID(ID + "_cp_0"), c.r);
             colorPickerCol[1] = ImGui.getStateStorage().getFloat(ImGui.getID(ID + "_cp_1"), c.g);
             colorPickerCol[2] = ImGui.getStateStorage().getFloat(ImGui.getID(ID + "_cp_2"), c.b);
             colorPickerCol[3] = ImGui.getStateStorage().getFloat(ImGui.getID(ID + "_cp_3"), c.a);
-            float cx = ImGui.getCursorPosX();
-            float cy = ImGui.getCursorPosY();
-            ImGui.setCursorPos(cx - 70, cy + sizeY * 2);
-            boolean pressed = ImGui.colorPicker4("##" + ID + "_color_picker", colorPickerCol);
-            ImGui.setCursorPos(cx, cy);
+            ImGui.colorPicker4("##" + ID + "_color_picker", colorPickerCol);
             c.set(colorPickerCol[0],colorPickerCol[1],colorPickerCol[2],colorPickerCol[3]);
             ImGui.getStateStorage().setFloat(ImGui.getID(ID + "_cp_0"), colorPickerCol[0]);
             ImGui.getStateStorage().setFloat(ImGui.getID(ID + "_cp_1"), colorPickerCol[1]);
             ImGui.getStateStorage().setFloat(ImGui.getID(ID + "_cp_2"), colorPickerCol[2]);
             ImGui.getStateStorage().setFloat(ImGui.getID(ID + "_cp_3"), colorPickerCol[3]);
-            if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT) && !pressed) ImGui.getStateStorage().setBool(ImGui.getID(ID + "_cp"), false);
+            boolean hovered = ImGui.getMousePosX() > ImGui.getCursorScreenPosX() &&
+                ImGui.getMousePosX() < ImGui.getCursorScreenPosX() + 250 &&
+                ImGui.getMousePosY() > ImGui.getCursorScreenPosY() - 250 &&
+                ImGui.getMousePosY() < ImGui.getCursorScreenPosY();
+
+            ImGui.end();
+            if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT) && !hovered) {
+                ImGui.getStateStorage().setBool(ImGui.getID(ID + "_cp"), false);
+            }
         }
 
         if (selectedPoint != -1 && ImGui.isMouseDoubleClicked(0)) {
+            System.out.println(selectedPoint);
             ImGui.getStateStorage().setInt(ImGui.getID(ID + "_cp_p"), selectedPoint);
             ImGui.getStateStorage().setBool(ImGui.getID(ID + "_cp"), true);
             Color c = colorRange.getColor(selectedPoint);
@@ -722,17 +884,10 @@ public class Gui {
         ImGui.begin("Hierarchy##HierarchyWindow", ImGuiWindowFlags.None | ImGuiWindowFlags.NoBringToFrontOnFocus);
 
         boolean isTreeNodeOpen = ImGui.treeNodeEx(Statics.currentProject.projectName, ImGuiTreeNodeFlags.SpanFullWidth | ImGuiTreeNodeFlags.DefaultOpen);
-        if (ImGui.beginPopupContextItem()) {
-            if (ImGui.selectable("New Empty Object")) {
-                GameObject newEmpty = new GameObject("Empty Object");
-                Statics.currentProject.rootGameObject.addGameObject(newEmpty);
-            }
-            isAnyWindowHovered |= ImGui.isWindowHovered();
-            ImGui.endPopup();
-        }
+        treeNodeContextMenu(currentProject.rootGameObject);
 
         if (isTreeNodeOpen) {
-            drawTreeChildren(Statics.currentProject.rootGameObject);
+            drawTreeChildren(Statics.currentProject.rootGameObject, false);
             ImGui.treePop();
         }
 
@@ -1803,7 +1958,77 @@ public class Gui {
     boolean first = true;
     ImInt dockSpaceTemp = new ImInt();
 
-    boolean wixLinkHovered;
+    private int inputInt(String label, int f) {
+        ImGui.text(label);
+        ImGui.sameLine();
+        ImGui.setCursorPosX(200);
+        tempInteger.set(f);
+        ImGui.inputInt("##" + label, tempInteger);
+        ImGui.setNextItemWidth(700);
+        return tempInteger.get();
+    }
+
+    private Vector2 inputVec2(String label, Vector2 v) {
+        ImGui.text(label);
+        ImGui.sameLine();
+        ImGui.setCursorPosX(200);
+        tempVec2[0] = v.x;
+        tempVec2[1] = v.y;
+        ImGui.inputFloat2("##" + label, tempVec2);
+        ImGui.setNextItemWidth(700);
+        return v.set(tempVec2[0], tempVec2[1]);
+    }
+
+    private boolean inputBool(String label, boolean b) {
+        ImGui.text(label);
+        ImGui.sameLine();
+        ImGui.setCursorPosX(200);
+        tempBoolean.set(b);
+        ImGui.checkbox("##" + label, tempBoolean);
+        return tempBoolean.get();
+    }
+
+    private ImVec2 tmpImVec2 = new ImVec2();
+
+    private void separator(String label) {
+
+        float cx = ImGui.getCursorScreenPosX();
+        float cy = ImGui.getCursorScreenPosY() + 20;
+
+        ImGui.getWindowDrawList().addLine(cx, cy, cx + 50, cy, ImGui.getColorU32(1,1,1,1), 1);
+        ImGui.getWindowDrawList().addText(cx + 60, cy - 8, ImGui.getColorU32(1,1,1,1), label);
+        ImGui.calcTextSize(tmpImVec2, label);
+        ImGui.getWindowDrawList().addLine(cx + 70 + tmpImVec2.x, cy, cx + ImGui.getContentRegionAvailX(), cy, ImGui.getColorU32(1,1,1,1), 1);
+
+        ImGui.setCursorScreenPos(cx, cy + 20);
+
+    }
+
+    private String openDialog(String filter) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            PointerBuffer path = stack.callocPointer(1);
+            NativeFileDialog.NFD_OpenDialog(filter, "", path);
+            return MemoryUtil.memUTF8Safe(path.get(0));
+        }
+    }
+
+    private String inputFile(String label, String file, String filter) {
+        ImGui.text(label);
+        ImGui.sameLine();
+        ImGui.setCursorPosX(200);
+        imString.set(file);
+        ImGui.inputText("##InFile" + label, imString);
+        ImGui.setNextItemWidth(700);
+        ImGui.sameLine();
+        if (ImGui.button("...##InFile" + label)) {
+            imString.set(openDialog(filter));
+        }
+        return imString.get();
+    }
+
+    private String inputFile(String label, String file) {
+        return inputFile(label, file, "");
+    }
 
     public void render() throws IOException, ClassNotFoundException {
 
@@ -1811,8 +2036,68 @@ public class Gui {
 
         imGuiGlfw.newFrame();
         ImGui.newFrame();
+        ImGuizmo.beginFrame();
+
+        /*ImGui.showStyleEditor();
+        ImGui.showDemoWindow();*/
+
+        ImGui.beginMainMenuBar();
 
         mainMenuBar();
+
+        if (ImGui.beginMenu("Edit")) {
+            if (ImGui.menuItem("Project Settings")) {
+                showProjectSettings.set(!showProjectSettings.get());
+            }
+            ImGui.endMenu();
+        }
+
+        ImGui.endMainMenuBar();
+
+        if (showPreferences.get()) {
+            ImGui.begin("Preferences", showPreferences);
+
+            String oldPath = preferences.getString("idePath");
+            String newPath;
+            newPath = inputText("IDE Path", oldPath);
+            if (!newPath.equals(oldPath)) preferences.putString("idePath", newPath);
+
+            ImGui.end();
+        }
+
+        if (showProjectSettings.get()) {
+            ImGui.begin("Project Settings", showProjectSettings);
+
+            separator("Main");
+
+            currentProject.windowTitle = inputText("Window Title", currentProject.windowTitle);
+            currentProject.buildName = inputText("Build Name", currentProject.buildName);
+            currentProject.version = inputText("Version", currentProject.version);
+            currentProject.windowSize.set(inputVec2("Window Size", currentProject.windowSize));
+            currentProject.fullscreen = inputBool("Fullscreen", currentProject.fullscreen);
+
+            ImGui.separator();
+
+            currentProject.appIconWin = inputFile("Windows App Icon", currentProject.appIconWin, "ico");
+            currentProject.appIconLinux = inputFile("Linux App Icon", currentProject.appIconLinux, "png");
+            currentProject.appIconMac = inputFile("Mac App Icon", currentProject.appIconMac, "icns");
+
+            currentProject.windowIcon16 = inputFile("Window Icon x16", currentProject.windowIcon16, "png,jpg");
+            currentProject.windowIcon32 = inputFile("Window Icon x32", currentProject.windowIcon32, "png,jpg");
+            currentProject.windowIcon64 = inputFile("Window Icon x64", currentProject.windowIcon64, "png,jpg");
+            currentProject.windowIcon128 = inputFile("Window Icon x128", currentProject.windowIcon128, "png,jpg");
+
+            separator("Physics");
+
+            currentProject.physicsEnabled = inputBool("Enabled", currentProject.physicsEnabled);
+            currentProject.physicsGravity.set(inputVec2("Gravity", currentProject.physicsGravity));
+            currentProject.physicsVelocityIterations = inputInt("Velocity Iterations", currentProject.physicsVelocityIterations);
+            currentProject.physicsPositionIterations = inputInt("Position Iterations", currentProject.physicsPositionIterations);
+
+            isAnyWindowHovered |= ImGui.isWindowHovered() || ImGui.isAnyItemHovered();
+
+            ImGui.end();
+        }
 
         int windowFlags = ImGuiWindowFlags.NoDocking;
 
@@ -1828,7 +2113,7 @@ public class Gui {
         ImGui.begin("DockSpace#DockSpaceWindow", windowFlags);
         ImGui.popStyleVar();
 
-        dockSpaceID = ImGui.getID("MyDockSpace");
+        dockSpaceID = ImGui.getID("DockSpace");
         ImGui.dockSpace(dockSpaceID, 0, 0, dockSpaceFlags);
 
         if (first) {
@@ -1873,8 +2158,10 @@ public class Gui {
             if (fbo != null) fbo.dispose();
             fbo = new FrameBuffer(Pixmap.Format.RGBA8888, sceneWidth, sceneHeight, false);
         }
+        //ImGuizmo.drawGrid(editorViewport.getCamera().view.val, editorViewport.getCamera().projection.val, new Matrix4().val, 10);
 
         ImGui.getWindowDrawList().addImage(fboTexture.getTextureObjectHandle(), sceneX, sceneY, sceneX + sceneWidth, sceneY + sceneHeight, 0, 1, 1, 0);
+
         ImGui.end();
 
         lastSceneWidth = sceneWidth;
