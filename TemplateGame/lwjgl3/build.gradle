@@ -90,12 +90,21 @@ if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_14)) {
       jpackageHome = javaHome.getOrElse("")
       mainJar = jar.archiveFileName.get()
       if (os.contains('win')) {
-        imageOptions = ["--icon", "icons/logo.ico"]
+        def iconFile = file("icons/logo.ico")
+        if (iconFile.exists()) {
+          imageOptions = ["--icon", iconFile.absolutePath]
+        }
       } else if (os.contains('nix') || os.contains('nux') || os.contains('bsd')) {
-        imageOptions = ["--icon", "icons/logo.png"]
+        def iconFile = file("icons/logo.png")
+        if (iconFile.exists()) {
+          imageOptions = ["--icon", iconFile.absolutePath]
+        }
       } else if (os.contains('mac')) {
 // If you are making a jpackage image on macOS, the below line should work thanks to StartupHelper.
-        imageOptions = ["--icon", "icons/logo.icns"]
+        def iconFile = file("icons/logo.icns")
+        if (iconFile.exists()) {
+          imageOptions = ["--icon", iconFile.absolutePath]
+        }
 // If the above line doesn't produce a runnable executable, you can try using the below line instead of the above one.
 //        imageOptions = ["--icon", "icons/logo.icns", "--java-options", "\"-XstartOnFirstThread\""]
       }
