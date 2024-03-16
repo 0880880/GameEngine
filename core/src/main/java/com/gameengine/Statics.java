@@ -38,6 +38,7 @@ public class Statics {
     public static Project currentProject;
     public static GameObject selectedGameObject;
     public static Object selection;
+    public static GameObject[] selectedGameObjects;
 
     public static JavaComponentLoader javaComponentLoader;
 
