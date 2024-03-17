@@ -497,7 +497,6 @@ public class Utils {
 	public static Component getComponent(String componentName) {
 		try {
 			File f = currentProject.path.child("Temp").child(componentName + ".jar").file();
-            System.out.println("Trying to load Component from " + f.getAbsolutePath());
             return javaComponentLoader.loadScript(f);
 		} catch (FileNotFoundException | ClassNotFoundException | MalformedURLException e) {
             try {

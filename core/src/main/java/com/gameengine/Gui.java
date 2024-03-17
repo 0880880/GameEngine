@@ -651,7 +651,6 @@ public class Gui {
         }
 
         if (selectedPoint != -1 && ImGui.isMouseDoubleClicked(0)) {
-            System.out.println(selectedPoint);
             ImGui.getStateStorage().setInt(ImGui.getID(ID + "_cp_p"), selectedPoint);
             ImGui.getStateStorage().setBool(ImGui.getID(ID + "_cp"), true);
             Color c = colorRange.getColor(selectedPoint);
