@@ -22,10 +22,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-
-import static com.game.Statics.selectedGameObject;
 
 public class Engine {
 
