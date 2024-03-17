@@ -54,7 +54,7 @@ Find the latest version in the [Releases](https://github.com/0880880/GameEngine/
 
 ## Requirements
 
-Java Development Kit (JDK): 17 or higher
+Java Development Kit (JDK): Version 17 or higher is recommended, JDK 11 or higher is required.
 
 ## **License**
 
